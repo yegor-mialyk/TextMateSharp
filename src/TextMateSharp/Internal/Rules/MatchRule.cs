@@ -1,34 +1,32 @@
-using System.Collections.Generic;
+namespace TextMateSharp.Internal.Rules;
 
-namespace TextMateSharp.Internal.Rules
+public class MatchRule : Rule
 {
-    public class MatchRule : Rule
+    private readonly RegExpSource _match;
+    private RegExpSourceList _cachedCompiledPatterns;
+
+    public MatchRule(RuleId id, string name, string match, List<CaptureRule> captures) : base(id, name, null)
     {
-        public List<CaptureRule> Captures { get; private set; }
+        _match = new(match, Id);
+        Captures = captures;
+        _cachedCompiledPatterns = null;
+    }
 
-        private RegExpSource _match;
-        private RegExpSourceList _cachedCompiledPatterns;
+    public List<CaptureRule> Captures { get; private set; }
 
-        public MatchRule(RuleId id, string name, string match, List<CaptureRule> captures) : base(id, name, null)
+    public override void CollectPatternsRecursive(IRuleRegistry grammar, RegExpSourceList sourceList, bool isFirst)
+    {
+        sourceList.Push(_match);
+    }
+
+    public override CompiledRule Compile(IRuleRegistry grammar, string endRegexSource, bool allowA, bool allowG)
+    {
+        if (_cachedCompiledPatterns == null)
         {
-            this._match = new RegExpSource(match, this.Id);
-            this.Captures = captures;
-            this._cachedCompiledPatterns = null;
+            _cachedCompiledPatterns = new();
+            CollectPatternsRecursive(grammar, _cachedCompiledPatterns, true);
         }
 
-        public override void CollectPatternsRecursive(IRuleRegistry grammar, RegExpSourceList sourceList, bool isFirst)
-        {
-            sourceList.Push(this._match);
-        }
-
-        public override CompiledRule Compile(IRuleRegistry grammar, string endRegexSource, bool allowA, bool allowG)
-        {
-            if (this._cachedCompiledPatterns == null)
-            {
-                this._cachedCompiledPatterns = new RegExpSourceList();
-                this.CollectPatternsRecursive(grammar, this._cachedCompiledPatterns, true);
-            }
-            return this._cachedCompiledPatterns.Compile(allowA, allowG);
-        }
+        return _cachedCompiledPatterns.Compile(allowA, allowG);
     }
 }

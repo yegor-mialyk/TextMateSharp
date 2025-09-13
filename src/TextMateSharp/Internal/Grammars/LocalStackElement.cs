@@ -1,14 +1,13 @@
-namespace TextMateSharp.Internal.Grammars
-{
-    class LocalStackElement
-    {
-        public AttributedScopeStack Scopes { get; private set; }
-        public int EndPos { get; private set; }
+namespace TextMateSharp.Internal.Grammars;
 
-        public LocalStackElement(AttributedScopeStack scopes, int endPos)
-        {
-            Scopes = scopes;
-            EndPos = endPos;
-        }
+internal class LocalStackElement
+{
+    public LocalStackElement(AttributedScopeStack scopes, int endPos)
+    {
+        Scopes = scopes;
+        EndPos = endPos;
     }
+
+    public AttributedScopeStack Scopes { get; private set; }
+    public int EndPos { get; private set; }
 }

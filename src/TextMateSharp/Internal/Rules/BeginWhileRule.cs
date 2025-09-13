@@ -1,93 +1,88 @@
-using System.Collections.Generic;
 using Onigwrap;
 
-namespace TextMateSharp.Internal.Rules
+namespace TextMateSharp.Internal.Rules;
+
+public class BeginWhileRule : Rule
 {
-    public class BeginWhileRule : Rule
+    private readonly RegExpSource _begin;
+    private readonly RegExpSource _while;
+    private RegExpSourceList _cachedCompiledPatterns;
+    private RegExpSourceList _cachedCompiledWhilePatterns;
+
+    public BeginWhileRule(RuleId id, string name, string contentName, string begin,
+        List<CaptureRule> beginCaptures, string whileStr, List<CaptureRule> whileCaptures,
+        CompilePatternsResult patterns) : base(id, name, contentName)
     {
-        public List<CaptureRule> BeginCaptures { get; private set; }
-        public List<CaptureRule> WhileCaptures { get; private set; }
-        public bool WhileHasBackReferences { get; private set; }
-        public bool HasMissingPatterns { get; private set; }
-        public IList<RuleId>Patterns { get; private set; }
+        _begin = new(begin, Id);
+        _while = new(whileStr, RuleId.WHILE_RULE);
 
-        private RegExpSource _begin;
-        private RegExpSource _while;
-        private RegExpSourceList _cachedCompiledPatterns;
-        private RegExpSourceList _cachedCompiledWhilePatterns;
+        BeginCaptures = beginCaptures;
+        WhileCaptures = whileCaptures;
+        WhileHasBackReferences = _while.HasBackReferences();
+        Patterns = patterns.Patterns;
+        HasMissingPatterns = patterns.HasMissingPatterns;
 
-        public BeginWhileRule(RuleId id, string name, string contentName, string begin,
-                List<CaptureRule> beginCaptures, string whileStr, List<CaptureRule> whileCaptures,
-                CompilePatternsResult patterns) : base(id, name, contentName)
+        _cachedCompiledPatterns = null;
+        _cachedCompiledWhilePatterns = null;
+    }
+
+    public List<CaptureRule> BeginCaptures { get; private set; }
+    public List<CaptureRule> WhileCaptures { get; private set; }
+    public bool WhileHasBackReferences { get; private set; }
+    public bool HasMissingPatterns { get; private set; }
+    public IList<RuleId> Patterns { get; }
+
+    public string getWhileWithResolvedBackReferences(string lineText, IOnigCaptureIndex[] captureIndices)
+    {
+        return _while.ResolveBackReferences(lineText, captureIndices);
+    }
+
+    public override void CollectPatternsRecursive(IRuleRegistry grammar, RegExpSourceList sourceList, bool isFirst)
+    {
+        if (isFirst)
         {
-            _begin = new RegExpSource(begin, this.Id);
-            _while = new RegExpSource(whileStr, RuleId.WHILE_RULE);
-
-            BeginCaptures = beginCaptures;
-            WhileCaptures = whileCaptures;
-            WhileHasBackReferences = this._while.HasBackReferences();
-            Patterns = patterns.Patterns;
-            HasMissingPatterns = patterns.HasMissingPatterns;
-
-            _cachedCompiledPatterns = null;
-            _cachedCompiledWhilePatterns = null;
-        }
-
-        public string getWhileWithResolvedBackReferences(string lineText, IOnigCaptureIndex[] captureIndices)
-        {
-            return this._while.ResolveBackReferences(lineText, captureIndices);
-        }
-
-        public override void CollectPatternsRecursive(IRuleRegistry grammar, RegExpSourceList sourceList, bool isFirst)
-        {
-            if (isFirst)
+            Rule rule;
+            foreach (var pattern in Patterns)
             {
-                Rule rule;
-                foreach (RuleId pattern in Patterns)
-                {
-                    rule = grammar.GetRule(pattern);
-                    rule.CollectPatternsRecursive(grammar, sourceList, false);
-                }
-            }
-            else
-            {
-                sourceList.Push(this._begin);
+                rule = grammar.GetRule(pattern);
+                rule.CollectPatternsRecursive(grammar, sourceList, false);
             }
         }
-
-        public override CompiledRule Compile(IRuleRegistry grammar, string endRegexSource, bool allowA, bool allowG)
+        else
         {
-            this.Precompile(grammar);
-            return this._cachedCompiledPatterns.Compile(allowA, allowG);
+            sourceList.Push(_begin);
         }
+    }
 
-        private void Precompile(IRuleRegistry grammar)
+    public override CompiledRule Compile(IRuleRegistry grammar, string endRegexSource, bool allowA, bool allowG)
+    {
+        Precompile(grammar);
+        return _cachedCompiledPatterns.Compile(allowA, allowG);
+    }
+
+    private void Precompile(IRuleRegistry grammar)
+    {
+        if (_cachedCompiledPatterns == null)
         {
-            if (this._cachedCompiledPatterns == null)
-            {
-                this._cachedCompiledPatterns = new RegExpSourceList();
-                this.CollectPatternsRecursive(grammar, this._cachedCompiledPatterns, true);
-            }
+            _cachedCompiledPatterns = new();
+            CollectPatternsRecursive(grammar, _cachedCompiledPatterns, true);
         }
+    }
 
-        public CompiledRule CompileWhile(string endRegexSource, bool allowA, bool allowG)
+    public CompiledRule CompileWhile(string endRegexSource, bool allowA, bool allowG)
+    {
+        PrecompileWhile();
+        if (_while.HasBackReferences())
+            _cachedCompiledWhilePatterns.SetSource(0, endRegexSource);
+        return _cachedCompiledWhilePatterns.Compile(allowA, allowG);
+    }
+
+    private void PrecompileWhile()
+    {
+        if (_cachedCompiledWhilePatterns == null)
         {
-            this.PrecompileWhile();
-            if (this._while.HasBackReferences())
-            {
-                this._cachedCompiledWhilePatterns.SetSource(0, endRegexSource);
-            }
-            return this._cachedCompiledWhilePatterns.Compile(allowA, allowG);
+            _cachedCompiledWhilePatterns = new();
+            _cachedCompiledWhilePatterns.Push(_while.HasBackReferences() ? _while.Clone() : _while);
         }
-
-        private void PrecompileWhile()
-        {
-            if (this._cachedCompiledWhilePatterns == null)
-            {
-                this._cachedCompiledWhilePatterns = new RegExpSourceList();
-                this._cachedCompiledWhilePatterns.Push(this._while.HasBackReferences() ? this._while.Clone() : this._while);
-            }
-        }
-
     }
 }

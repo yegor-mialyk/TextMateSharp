@@ -1,346 +1,325 @@
 using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-
 using TextMateSharp.Internal.Rules;
 using TextMateSharp.Internal.Types;
-using TextMateSharp.Internal.Utils;
 
-namespace TextMateSharp.Internal.Grammars.Parser
+namespace TextMateSharp.Internal.Grammars.Parser;
+
+public class Raw : Dictionary<string, object>, IRawRepository, IRawRule, IRawGrammar, IRawCaptures
 {
-    public class Raw : Dictionary<string, object>, IRawRepository, IRawRule, IRawGrammar, IRawCaptures
+    private static readonly string FIRST_LINE_MATCH = "firstLineMatch";
+    private static readonly string FILE_TYPES = "fileTypes";
+    private static readonly string SCOPE_NAME = "scopeName";
+    private static readonly string APPLY_END_PATTERN_LAST = "applyEndPatternLast";
+    private static readonly string REPOSITORY = "repository";
+    private static readonly string INJECTION_SELECTOR = "injectionSelector";
+    private static readonly string INJECTIONS = "injections";
+    private static readonly string PATTERNS = "patterns";
+    private static readonly string WHILE_CAPTURES = "whileCaptures";
+    private static readonly string END_CAPTURES = "endCaptures";
+    private static readonly string INCLUDE = "include";
+    private static readonly string WHILE = "while";
+    private static readonly string END = "end";
+    private static readonly string BEGIN = "begin";
+    private static readonly string CAPTURES = "captures";
+    private static readonly string MATCH = "match";
+    private static readonly string BEGIN_CAPTURES = "beginCaptures";
+    private static readonly string CONTENT_NAME = "contentName";
+    private static readonly string NAME = "name";
+    private static readonly string ID = "id";
+    private static readonly string DOLLAR_SELF = "$self";
+    private static readonly string DOLLAR_BASE = "$base";
+    private List<string> fileTypes;
+
+    public IRawRule GetCapture(string captureId)
     {
-        private static string FIRST_LINE_MATCH = "firstLineMatch";
-        private static string FILE_TYPES = "fileTypes";
-        private static string SCOPE_NAME = "scopeName";
-        private static string APPLY_END_PATTERN_LAST = "applyEndPatternLast";
-        private static string REPOSITORY = "repository";
-        private static string INJECTION_SELECTOR = "injectionSelector";
-        private static string INJECTIONS = "injections";
-        private static string PATTERNS = "patterns";
-        private static string WHILE_CAPTURES = "whileCaptures";
-        private static string END_CAPTURES = "endCaptures";
-        private static string INCLUDE = "include";
-        private static string WHILE = "while";
-        private static string END = "end";
-        private static string BEGIN = "begin";
-        private static string CAPTURES = "captures";
-        private static string MATCH = "match";
-        private static string BEGIN_CAPTURES = "beginCaptures";
-        private static string CONTENT_NAME = "contentName";
-        private static string NAME = "name";
-        private static string ID = "id";
-        private static string DOLLAR_SELF = "$self";
-        private static string DOLLAR_BASE = "$base";
-        private List<string> fileTypes;
+        return GetProp(captureId);
+    }
 
-        public IRawRepository Merge(params IRawRepository[] sources)
+    IEnumerator<string> IEnumerable<string>.GetEnumerator()
+    {
+        return Keys.GetEnumerator();
+    }
+
+    public Dictionary<string, IRawRule> GetInjections()
+    {
+        var result = TryGetObject<Raw>(INJECTIONS);
+
+        if (result == null)
+            return null;
+
+        return ConvertToDictionary<IRawRule>(result);
+    }
+
+    public string GetInjectionSelector()
+    {
+        return (string) this[INJECTION_SELECTOR];
+    }
+
+    public string GetScopeName()
+    {
+        return TryGetObject<string>(SCOPE_NAME);
+    }
+
+    public ICollection<string> GetFileTypes()
+    {
+        if (fileTypes == null)
         {
-            Raw target = new Raw();
-            foreach (IRawRepository source in sources)
-            {
-                Raw sourceRaw = ((Raw)source);
-                foreach (string key in sourceRaw.Keys)
+            var list = new List<string>();
+            var unparsedFileTypes = TryGetObject<ICollection>(FILE_TYPES);
+            if (unparsedFileTypes != null)
+                foreach (var o in unparsedFileTypes)
                 {
-                    target[key] = sourceRaw[key];
+                    var str = o.ToString();
+                    // #202
+                    if (str.StartsWith("."))
+                        str = str.Substring(1);
+                    list.Add(str);
                 }
-            }
-            return target;
+
+            fileTypes = list;
         }
 
-        public IRawRule GetProp(string name)
+        return fileTypes;
+    }
+
+    public string GetFirstLineMatch()
+    {
+        return TryGetObject<string>(FIRST_LINE_MATCH);
+    }
+
+    public IRawGrammar Clone()
+    {
+        return (IRawGrammar) Clone(this);
+    }
+
+    public IRawRepository Merge(params IRawRepository[] sources)
+    {
+        var target = new Raw();
+        foreach (var source in sources)
         {
-            return TryGetObject<IRawRule>(name);
+            var sourceRaw = (Raw) source;
+            foreach (var key in sourceRaw.Keys)
+                target[key] = sourceRaw[key];
         }
 
-        public IRawRule GetBase()
-        {
-            return TryGetObject<IRawRule>(DOLLAR_BASE);
-        }
+        return target;
+    }
 
-        public void SetBase(IRawRule ruleBase)
-        {
-            this[DOLLAR_BASE] = ruleBase;
-        }
+    public IRawRule GetProp(string name)
+    {
+        return TryGetObject<IRawRule>(name);
+    }
 
-        public IRawRule GetSelf()
-        {
-            return TryGetObject<IRawRule>(DOLLAR_SELF);
-        }
+    public IRawRule GetBase()
+    {
+        return TryGetObject<IRawRule>(DOLLAR_BASE);
+    }
 
-        public void SetSelf(IRawRule self)
-        {
-            this[DOLLAR_SELF] = self;
-        }
+    public void SetBase(IRawRule ruleBase)
+    {
+        this[DOLLAR_BASE] = ruleBase;
+    }
 
-        public RuleId GetId()
-        {
-            return TryGetObject<RuleId>(ID);
-        }
+    public IRawRule GetSelf()
+    {
+        return TryGetObject<IRawRule>(DOLLAR_SELF);
+    }
 
-        public void SetId(RuleId id)
-        {
-            this[ID] = id;
-        }
+    public void SetSelf(IRawRule self)
+    {
+        this[DOLLAR_SELF] = self;
+    }
 
-        public string GetName()
-        {
-            return TryGetObject<string>(NAME);
-        }
+    public RuleId GetId()
+    {
+        return TryGetObject<RuleId>(ID);
+    }
 
-        public void SetName(string name)
-        {
-            this[NAME] = name;
-        }
+    public void SetId(RuleId id)
+    {
+        this[ID] = id;
+    }
 
-        public string GetContentName()
-        {
-            return TryGetObject<string>(CONTENT_NAME);
-        }
+    public string GetName()
+    {
+        return TryGetObject<string>(NAME);
+    }
 
-        public string GetMatch()
-        {
-            return TryGetObject<string>(MATCH);
-        }
+    public void SetName(string name)
+    {
+        this[NAME] = name;
+    }
 
-        public IRawCaptures GetCaptures()
-        {
-            UpdateCaptures(CAPTURES);
-            return TryGetObject<IRawCaptures>(CAPTURES);
-        }
+    public string GetContentName()
+    {
+        return TryGetObject<string>(CONTENT_NAME);
+    }
 
-        private void UpdateCaptures(string name)
-        {
-            object captures = TryGetObject<object>(name);
-            if (captures is IList)
-            {
-                Raw rawCaptures = new Raw();
-                int i = 0;
-                foreach (object capture in (IList)captures)
-                {
-                    i++;
-                    rawCaptures[i + ""] = capture;
-                }
-                this[name] = rawCaptures;
-            }
-        }
+    public string GetMatch()
+    {
+        return TryGetObject<string>(MATCH);
+    }
 
-        public string GetBegin()
-        {
-            return TryGetObject<string>(BEGIN);
-        }
+    public IRawCaptures GetCaptures()
+    {
+        UpdateCaptures(CAPTURES);
+        return TryGetObject<IRawCaptures>(CAPTURES);
+    }
 
-        public string GetWhile()
-        {
-            return TryGetObject<string>(WHILE);
-        }
+    public string GetBegin()
+    {
+        return TryGetObject<string>(BEGIN);
+    }
 
-        public string GetInclude()
-        {
-            return TryGetObject<string>(INCLUDE);
-        }
+    public string GetWhile()
+    {
+        return TryGetObject<string>(WHILE);
+    }
 
-        public void SetInclude(string include)
-        {
-            this[INCLUDE] = include;
-        }
+    public string GetInclude()
+    {
+        return TryGetObject<string>(INCLUDE);
+    }
 
-        public IRawCaptures GetBeginCaptures()
-        {
-            UpdateCaptures(BEGIN_CAPTURES);
-            return TryGetObject<IRawCaptures>(BEGIN_CAPTURES);
-        }
+    public void SetInclude(string include)
+    {
+        this[INCLUDE] = include;
+    }
 
-        public void SetBeginCaptures(IRawCaptures beginCaptures)
-        {
-            this[BEGIN_CAPTURES] = beginCaptures;
-        }
+    public IRawCaptures GetBeginCaptures()
+    {
+        UpdateCaptures(BEGIN_CAPTURES);
+        return TryGetObject<IRawCaptures>(BEGIN_CAPTURES);
+    }
 
-        public string GetEnd()
-        {
-            return TryGetObject<string>(END);
-        }
+    public void SetBeginCaptures(IRawCaptures beginCaptures)
+    {
+        this[BEGIN_CAPTURES] = beginCaptures;
+    }
 
-        public IRawCaptures GetEndCaptures()
-        {
-            UpdateCaptures(END_CAPTURES);
-            return TryGetObject<IRawCaptures>(END_CAPTURES);
-        }
+    public string GetEnd()
+    {
+        return TryGetObject<string>(END);
+    }
 
-        public IRawCaptures GetWhileCaptures()
-        {
-            UpdateCaptures(WHILE_CAPTURES);
-            return TryGetObject<IRawCaptures>(WHILE_CAPTURES);
-        }
+    public IRawCaptures GetEndCaptures()
+    {
+        UpdateCaptures(END_CAPTURES);
+        return TryGetObject<IRawCaptures>(END_CAPTURES);
+    }
 
-        public ICollection<IRawRule> GetPatterns()
-        {
-            ICollection result = TryGetObject<ICollection>(PATTERNS);
+    public IRawCaptures GetWhileCaptures()
+    {
+        UpdateCaptures(WHILE_CAPTURES);
+        return TryGetObject<IRawCaptures>(WHILE_CAPTURES);
+    }
 
-            if (result == null)
-                return null;
+    public ICollection<IRawRule> GetPatterns()
+    {
+        var result = TryGetObject<ICollection>(PATTERNS);
 
-            return result.Cast<IRawRule>().ToList();
-        }
+        if (result == null)
+            return null;
 
-        public void SetPatterns(ICollection<IRawRule> patterns)
-        {
-            this[PATTERNS] = patterns;
-        }
+        return result.Cast<IRawRule>().ToList();
+    }
 
-        public Dictionary<string, IRawRule> GetInjections()
-        {
-            Raw result = TryGetObject<Raw>(INJECTIONS);
+    public void SetPatterns(ICollection<IRawRule> patterns)
+    {
+        this[PATTERNS] = patterns;
+    }
 
-            if (result == null)
-                return null;
+    public IRawRepository GetRepository()
+    {
+        return TryGetObject<IRawRepository>(REPOSITORY);
+    }
 
-            return ConvertToDictionary<IRawRule>(result);
-        }
+    public void SetRepository(IRawRepository repository)
+    {
+        this[REPOSITORY] = repository;
+    }
 
-        public string GetInjectionSelector()
-        {
-            return (string)this[INJECTION_SELECTOR];
-        }
-
-        public IRawRepository GetRepository()
-        {
-            return TryGetObject<IRawRepository>(REPOSITORY);
-        }
-
-        public void SetRepository(IRawRepository repository)
-        {
-            this[REPOSITORY] = repository;
-        }
-
-        public bool IsApplyEndPatternLast()
-        {
-            object applyEndPatternLast = TryGetObject<object>(APPLY_END_PATTERN_LAST);
-            if (applyEndPatternLast == null)
-            {
-                return false;
-            }
-            if (applyEndPatternLast is bool)
-            {
-                return (bool)applyEndPatternLast;
-            }
-            if (applyEndPatternLast is int)
-            {
-                return ((int)applyEndPatternLast) == 1;
-            }
+    public bool IsApplyEndPatternLast()
+    {
+        var applyEndPatternLast = TryGetObject<object>(APPLY_END_PATTERN_LAST);
+        if (applyEndPatternLast == null)
             return false;
-        }
+        if (applyEndPatternLast is bool)
+            return (bool) applyEndPatternLast;
+        if (applyEndPatternLast is int)
+            return (int) applyEndPatternLast == 1;
+        return false;
+    }
 
-        public void SetApplyEndPatternLast(bool applyEndPatternLast)
+    private void UpdateCaptures(string name)
+    {
+        var captures = TryGetObject<object>(name);
+        if (captures is IList)
         {
-            this[APPLY_END_PATTERN_LAST] = applyEndPatternLast;
-        }
-
-        public string GetScopeName()
-        {
-            return TryGetObject<string>(SCOPE_NAME);
-        }
-
-        public ICollection<string> GetFileTypes()
-        {
-            if (fileTypes == null)
+            var rawCaptures = new Raw();
+            var i = 0;
+            foreach (var capture in (IList) captures)
             {
-                List<string> list = new List<string>();
-                ICollection unparsedFileTypes = TryGetObject<ICollection>(FILE_TYPES);
-                if (unparsedFileTypes != null)
-                {
-                    foreach (object o in unparsedFileTypes)
-                    {
-                        string str = o.ToString();
-                        // #202
-                        if (str.StartsWith("."))
-                        {
-                            str = str.Substring(1);
-                        }
-                        list.Add(str);
-                    }
-                }
-                fileTypes = list;
+                i++;
+                rawCaptures[i + ""] = capture;
             }
-            return fileTypes;
+
+            this[name] = rawCaptures;
+        }
+    }
+
+    public void SetApplyEndPatternLast(bool applyEndPatternLast)
+    {
+        this[APPLY_END_PATTERN_LAST] = applyEndPatternLast;
+    }
+
+    public object Clone(object value)
+    {
+        if (value is Raw)
+        {
+            var rawToClone = (Raw) value;
+            var raw = new Raw();
+
+            foreach (var key in rawToClone.Keys)
+                raw[key] = Clone(rawToClone[key]);
+            return raw;
         }
 
-        public string GetFirstLineMatch()
+        if (value is IList)
         {
-            return TryGetObject<string>(FIRST_LINE_MATCH);
-        }
-
-        public IRawRule GetCapture(string captureId)
-        {
-            return GetProp(captureId);
-        }
-
-        public IRawGrammar Clone()
-        {
-            return (IRawGrammar)Clone(this);
-        }
-
-        public object Clone(object value)
-        {
-            if (value is Raw)
-            {
-                Raw rawToClone = (Raw)value;
-                Raw raw = new Raw();
-
-                foreach (string key in rawToClone.Keys)
-                {
-                    raw[key] = Clone(rawToClone[key]);
-                }
-                return raw;
-            }
-            else if (value is IList)
-            {
-                List<object> result = new List<object>();
-                foreach (object obj in (IList)value)
-                {
-                    result.Add(Clone(obj));
-                }
-                return result;
-            }
-            else if (value is string)
-            {
-                return value;
-            }
-            else if (value is int)
-            {
-                return value;
-            }
-            else if (value is bool)
-            {
-                return value;
-            }
-            return value;
-        }
-
-        IEnumerator<string> IEnumerable<string>.GetEnumerator()
-        {
-            return Keys.GetEnumerator();
-        }
-
-        Dictionary<string, T> ConvertToDictionary<T>(Raw raw)
-        {
-            Dictionary<string, T> result = new Dictionary<string, T>();
-
-            foreach (string key in raw.Keys)
-                result.Add(key, (T)raw[key]);
-
+            var result = new List<object>();
+            foreach (var obj in (IList) value)
+                result.Add(Clone(obj));
             return result;
         }
 
-        T TryGetObject<T>(string key)
-        {
-            object result;
-            if (!TryGetValue(key, out result))
-            {
-                return default(T);
-            }
+        if (value is string)
+            return value;
 
-            return (T)result;
-        }
+        if (value is int)
+            return value;
+
+        if (value is bool)
+            return value;
+        return value;
+    }
+
+    private Dictionary<string, T> ConvertToDictionary<T>(Raw raw)
+    {
+        var result = new Dictionary<string, T>();
+
+        foreach (var key in raw.Keys)
+            result.Add(key, (T) raw[key]);
+
+        return result;
+    }
+
+    private T TryGetObject<T>(string key)
+    {
+        object result;
+        if (!TryGetValue(key, out result))
+            return default;
+
+        return (T) result;
     }
 }

@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="src\TextMateSharp.Demo/TextMateSharp.Demo.csproj" />
+  <Project Path="src\TextMateSharp.Grammars.Tests/TextMateSharp.Grammars.Tests.csproj" />
+  <Project Path="src\TextMateSharp.Tests/TextMateSharp.Tests.csproj" />
+  <Project Path="src\TextMateSharp/TextMateSharp.csproj" />
+</Solution>

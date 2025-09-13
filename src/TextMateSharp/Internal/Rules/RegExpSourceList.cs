@@ -1,140 +1,127 @@
-using System.Collections.Generic;
 using Onigwrap;
 
-namespace TextMateSharp.Internal.Rules
+namespace TextMateSharp.Internal.Rules;
+
+public class RegExpSourceList
 {
-    public class RegExpSourceList
+    private readonly RegExpSourceListAnchorCache _anchorCache;
+
+    private readonly List<RegExpSource> _items;
+    private CompiledRule _cached;
+    private bool _hasAnchors;
+
+    public RegExpSourceList()
     {
-        private class RegExpSourceListAnchorCache
+        _items = new();
+        _hasAnchors = false;
+        _cached = null;
+        _anchorCache = new();
+    }
+
+    public void Push(RegExpSource item)
+    {
+        _items.Add(item);
+        _hasAnchors = _hasAnchors ? _hasAnchors : item.HasAnchor();
+    }
+
+    public void UnShift(RegExpSource item)
+    {
+        _items.Insert(0, item);
+        _hasAnchors = _hasAnchors ? _hasAnchors : item.HasAnchor();
+    }
+
+    public int Length()
+    {
+        return _items.Count;
+    }
+
+    public void SetSource(int index, string newSource)
+    {
+        var r = _items[index];
+        if (!r.GetSource().Equals(newSource))
         {
+            // bust the cache
+            _cached = null;
+            _anchorCache.A0_G0 = null;
+            _anchorCache.A0_G1 = null;
+            _anchorCache.A1_G0 = null;
+            _anchorCache.A1_G1 = null;
 
-            public CompiledRule A0_G0;
-            public CompiledRule A0_G1;
-            public CompiledRule A1_G0;
-            public CompiledRule A1_G1;
+            r.SetSource(newSource);
+        }
+    }
 
+    public CompiledRule Compile(bool allowA, bool allowG)
+    {
+        if (!_hasAnchors)
+        {
+            if (_cached == null)
+            {
+                var regexps = new List<string>();
+                foreach (var regExpSource in _items)
+                    regexps.Add(regExpSource.GetSource());
+                _cached = new(CreateOnigScanner(regexps.ToArray()), GetRules());
+            }
+
+            return _cached;
         }
 
-        private List<RegExpSource> _items;
-        private bool _hasAnchors;
-        private CompiledRule _cached;
-        private RegExpSourceListAnchorCache _anchorCache;
-
-        public RegExpSourceList()
+        if (_anchorCache.A0_G0 == null)
+            _anchorCache.A0_G0 = !allowA && !allowG
+                ? ResolveAnchors(allowA, allowG)
+                : null;
+        if (_anchorCache.A0_G1 == null)
+            _anchorCache.A0_G1 = !allowA && allowG
+                ? ResolveAnchors(allowA, allowG)
+                : null;
+        if (_anchorCache.A1_G0 == null)
+            _anchorCache.A1_G0 = allowA && !allowG
+                ? ResolveAnchors(allowA, allowG)
+                : null;
+        if (_anchorCache.A1_G1 == null)
+            _anchorCache.A1_G1 = allowA && allowG
+                ? ResolveAnchors(allowA, allowG)
+                : null;
+        if (allowA)
         {
-            this._items = new List<RegExpSource>();
-            this._hasAnchors = false;
-            this._cached = null;
-            this._anchorCache = new RegExpSourceListAnchorCache();
-        }
-
-        public void Push(RegExpSource item)
-        {
-            this._items.Add(item);
-            this._hasAnchors = this._hasAnchors ? this._hasAnchors : item.HasAnchor();
-        }
-
-        public void UnShift(RegExpSource item)
-        {
-            this._items.Insert(0, item);
-            this._hasAnchors = this._hasAnchors ? this._hasAnchors : item.HasAnchor();
-        }
-
-        public int Length()
-        {
-            return this._items.Count;
-        }
-
-        public void SetSource(int index, string newSource)
-        {
-            RegExpSource r = this._items[index];
-            if (!r.GetSource().Equals(newSource))
-            {
-                // bust the cache
-                this._cached = null;
-                this._anchorCache.A0_G0 = null;
-                this._anchorCache.A0_G1 = null;
-                this._anchorCache.A1_G0 = null;
-                this._anchorCache.A1_G1 = null;
-
-                r.SetSource(newSource);
-            }
-        }
-
-        public CompiledRule Compile(bool allowA, bool allowG)
-        {
-            if (!this._hasAnchors)
-            {
-                if (this._cached == null)
-                {
-                    List<string> regexps = new List<string>();
-                    foreach (RegExpSource regExpSource in _items)
-                    {
-                        regexps.Add(regExpSource.GetSource());
-                    }
-                    this._cached = new CompiledRule(CreateOnigScanner(regexps.ToArray()), GetRules());
-                }
-                return this._cached;
-            }
-
-            if (this._anchorCache.A0_G0 == null)
-            {
-                this._anchorCache.A0_G0 = (allowA == false && allowG == false) ? this.ResolveAnchors(allowA, allowG)
-                        : null;
-            }
-            if (this._anchorCache.A0_G1 == null)
-            {
-                this._anchorCache.A0_G1 = (allowA == false && allowG == true) ? this.ResolveAnchors(allowA, allowG)
-                        : null;
-            }
-            if (this._anchorCache.A1_G0 == null)
-            {
-                this._anchorCache.A1_G0 = (allowA == true && allowG == false) ? this.ResolveAnchors(allowA, allowG)
-                        : null;
-            }
-            if (this._anchorCache.A1_G1 == null)
-            {
-                this._anchorCache.A1_G1 = (allowA == true && allowG == true) ? this.ResolveAnchors(allowA, allowG)
-                        : null;
-            }
-            if (allowA)
-            {
-                if (allowG)
-                    return this._anchorCache.A1_G1;
-
-                return this._anchorCache.A1_G0;
-            }
-
             if (allowG)
-                return this._anchorCache.A0_G1;
+                return _anchorCache.A1_G1;
 
-            return this._anchorCache.A0_G0;
+            return _anchorCache.A1_G0;
         }
 
-        private CompiledRule ResolveAnchors(bool allowA, bool allowG)
-        {
-            List<string> regexps = new List<string>();
-            foreach (RegExpSource regExpSource in _items)
-            {
-                regexps.Add(regExpSource.ResolveAnchors(allowA, allowG));
-            }
-            return new CompiledRule(CreateOnigScanner(regexps.ToArray()), GetRules());
-        }
+        if (allowG)
+            return _anchorCache.A0_G1;
 
-        private OnigScanner CreateOnigScanner(string[] regexps)
-        {
-            return new OnigScanner(regexps);
-        }
+        return _anchorCache.A0_G0;
+    }
 
-        private IList<RuleId> GetRules()
-        {
-            List<RuleId> ruleIds = new List<RuleId>();
-            foreach (RegExpSource item in this._items)
-            {
-                ruleIds.Add(item.GetRuleId());
-            }
-            return ruleIds.ToArray();
-        }
+    private CompiledRule ResolveAnchors(bool allowA, bool allowG)
+    {
+        var regexps = new List<string>();
+        foreach (var regExpSource in _items)
+            regexps.Add(regExpSource.ResolveAnchors(allowA, allowG));
+        return new(CreateOnigScanner(regexps.ToArray()), GetRules());
+    }
 
+    private OnigScanner CreateOnigScanner(string[] regexps)
+    {
+        return new(regexps);
+    }
+
+    private IList<RuleId> GetRules()
+    {
+        var ruleIds = new List<RuleId>();
+        foreach (var item in _items)
+            ruleIds.Add(item.GetRuleId());
+        return ruleIds.ToArray();
+    }
+
+    private class RegExpSourceListAnchorCache
+    {
+        public CompiledRule A0_G0;
+        public CompiledRule A0_G1;
+        public CompiledRule A1_G0;
+        public CompiledRule A1_G1;
     }
 }

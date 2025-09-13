@@ -1,50 +1,45 @@
 using Onigwrap;
-
 using TextMateSharp.Internal.Utils;
 
-namespace TextMateSharp.Internal.Rules
+namespace TextMateSharp.Internal.Rules;
+
+public abstract class Rule
 {
-    public abstract class Rule
+    private readonly string _contentName;
+
+    private readonly bool _contentNameIsCapturing;
+    private readonly string _name;
+
+    private readonly bool _nameIsCapturing;
+
+    public Rule(RuleId id, string name, string contentName)
     {
-        public RuleId Id { get; private set; }
+        Id = id;
 
-        private bool _nameIsCapturing;
-        private string _name;
-
-        private bool _contentNameIsCapturing;
-        private string _contentName;
-
-        public Rule(RuleId id, string name, string contentName)
-        {
-            Id = id;
-
-            _name = name;
-            _nameIsCapturing = RegexSource.HasCaptures(this._name);
-            _contentName = contentName;
-            _contentNameIsCapturing = RegexSource.HasCaptures(this._contentName);
-        }
-
-        public string GetName(string lineText, IOnigCaptureIndex[] captureIndices)
-        {
-            if (!this._nameIsCapturing)
-            {
-                return this._name;
-            }
-
-            return RegexSource.ReplaceCaptures(this._name, lineText, captureIndices);
-        }
-
-        public string GetContentName(string lineText, IOnigCaptureIndex[] captureIndices)
-        {
-            if (!this._contentNameIsCapturing)
-            {
-                return this._contentName;
-            }
-            return RegexSource.ReplaceCaptures(this._contentName, lineText, captureIndices);
-        }
-
-        public abstract void CollectPatternsRecursive(IRuleRegistry grammar, RegExpSourceList sourceList, bool isFirst);
-
-        public abstract CompiledRule Compile(IRuleRegistry grammar, string endRegexSource, bool allowA, bool allowG);
+        _name = name;
+        _nameIsCapturing = RegexSource.HasCaptures(_name);
+        _contentName = contentName;
+        _contentNameIsCapturing = RegexSource.HasCaptures(_contentName);
     }
+
+    public RuleId Id { get; private set; }
+
+    public string GetName(string lineText, IOnigCaptureIndex[] captureIndices)
+    {
+        if (!_nameIsCapturing)
+            return _name;
+
+        return RegexSource.ReplaceCaptures(_name, lineText, captureIndices);
+    }
+
+    public string GetContentName(string lineText, IOnigCaptureIndex[] captureIndices)
+    {
+        if (!_contentNameIsCapturing)
+            return _contentName;
+        return RegexSource.ReplaceCaptures(_contentName, lineText, captureIndices);
+    }
+
+    public abstract void CollectPatternsRecursive(IRuleRegistry grammar, RegExpSourceList sourceList, bool isFirst);
+
+    public abstract CompiledRule Compile(IRuleRegistry grammar, string endRegexSource, bool allowA, bool allowG);
 }

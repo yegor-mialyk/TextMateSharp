@@ -1,218 +1,193 @@
-
-using System;
-using System.Collections.Generic;
-
 using TextMateSharp.Internal.Utils;
 
-namespace TextMateSharp.Themes
+namespace TextMateSharp.Themes;
+
+public class ThemeTrieElement
 {
-    public class ThemeTrieElement
+    private readonly Dictionary<string /* segment */, ThemeTrieElement> children;
+
+    // _themeTrieElementBrand: void;
+
+    private readonly ThemeTrieElementRule mainRule;
+    private readonly List<ThemeTrieElementRule> rulesWithParentScopes;
+
+    public ThemeTrieElement(ThemeTrieElementRule mainRule) :
+        this(mainRule, new(), new())
     {
+    }
 
-        // _themeTrieElementBrand: void;
+    public ThemeTrieElement(ThemeTrieElementRule mainRule, List<ThemeTrieElementRule> rulesWithParentScopes) :
+        this(mainRule, rulesWithParentScopes, new())
+    {
+    }
 
-        private ThemeTrieElementRule mainRule;
-        private List<ThemeTrieElementRule> rulesWithParentScopes;
-        private Dictionary<string /* segment */, ThemeTrieElement> children;
+    public ThemeTrieElement(ThemeTrieElementRule mainRule, List<ThemeTrieElementRule> rulesWithParentScopes,
+        Dictionary<string /* segment */, ThemeTrieElement> children)
+    {
+        this.mainRule = mainRule;
+        this.rulesWithParentScopes = rulesWithParentScopes;
+        this.children = children;
+    }
 
-        public ThemeTrieElement(ThemeTrieElementRule mainRule) :
-            this(mainRule, new List<ThemeTrieElementRule>(), new Dictionary<string /* segment */, ThemeTrieElement>())
-        {
-        }
-
-        public ThemeTrieElement(ThemeTrieElementRule mainRule, List<ThemeTrieElementRule> rulesWithParentScopes) :
-                this(mainRule, rulesWithParentScopes, new Dictionary<string /* segment */, ThemeTrieElement>())
-        {
-
-        }
-
-        public ThemeTrieElement(ThemeTrieElementRule mainRule, List<ThemeTrieElementRule> rulesWithParentScopes,
-                Dictionary<string /* segment */, ThemeTrieElement> children)
-        {
-            this.mainRule = mainRule;
-            this.rulesWithParentScopes = rulesWithParentScopes;
-            this.children = children;
-        }
-
-        private static List<ThemeTrieElementRule> SortBySpecificity(List<ThemeTrieElementRule> arr)
-        {
-            if (arr.Count == 1)
-            {
-                return arr;
-            }
-            arr.Sort((a, b) => CmpBySpecificity(a, b));
+    private static List<ThemeTrieElementRule> SortBySpecificity(List<ThemeTrieElementRule> arr)
+    {
+        if (arr.Count == 1)
             return arr;
-        }
+        arr.Sort((a, b) => CmpBySpecificity(a, b));
+        return arr;
+    }
 
-        private static int CmpBySpecificity(ThemeTrieElementRule a, ThemeTrieElementRule b)
+    private static int CmpBySpecificity(ThemeTrieElementRule a, ThemeTrieElementRule b)
+    {
+        if (a.scopeDepth == b.scopeDepth)
         {
-            if (a.scopeDepth == b.scopeDepth)
-            {
-                List<string> aParentScopes = a.parentScopes;
-                List<string> bParentScopes = b.parentScopes;
-                int aParentScopesLen = aParentScopes == null ? 0 : aParentScopes.Count;
-                int bParentScopesLen = bParentScopes == null ? 0 : bParentScopes.Count;
-                if (aParentScopesLen == bParentScopesLen)
+            var aParentScopes = a.parentScopes;
+            var bParentScopes = b.parentScopes;
+            var aParentScopesLen = aParentScopes == null ? 0 : aParentScopes.Count;
+            var bParentScopesLen = bParentScopes == null ? 0 : bParentScopes.Count;
+            if (aParentScopesLen == bParentScopesLen)
+                for (var i = 0; i < aParentScopesLen; i++)
                 {
-                    for (int i = 0; i < aParentScopesLen; i++)
-                    {
-                        int aLen = aParentScopes[i].Length;
-                        int bLen = bParentScopes[i].Length;
-                        if (aLen != bLen)
-                        {
-                            return bLen - aLen;
-                        }
-                    }
+                    var aLen = aParentScopes[i].Length;
+                    var bLen = bParentScopes[i].Length;
+                    if (aLen != bLen)
+                        return bLen - aLen;
                 }
-                return bParentScopesLen - aParentScopesLen;
-            }
-            return b.scopeDepth - a.scopeDepth;
+
+            return bParentScopesLen - aParentScopesLen;
         }
 
-        public List<ThemeTrieElementRule> Match(string scope)
+        return b.scopeDepth - a.scopeDepth;
+    }
+
+    public List<ThemeTrieElementRule> Match(string scope)
+    {
+        List<ThemeTrieElementRule> arr;
+        if ("".Equals(scope))
         {
-            List<ThemeTrieElementRule> arr;
-            if ("".Equals(scope))
-            {
-                arr = new List<ThemeTrieElementRule>();
-                arr.Add(this.mainRule);
-                arr.AddRange(this.rulesWithParentScopes);
-                return ThemeTrieElement.SortBySpecificity(arr);
-            }
-
-            int dotIndex = scope.IndexOf('.');
-            string head;
-            string tail;
-            if (dotIndex == -1)
-            {
-                head = scope;
-                tail = "";
-            }
-            else
-            {
-                head = scope.SubstringAtIndexes(0, dotIndex);
-                tail = scope.Substring(dotIndex + 1);
-            }
-
-            if (children.TryGetValue(head, out ThemeTrieElement value))
-            {
-                return value.Match(tail);
-            }
-
-            arr = new List<ThemeTrieElementRule>();
-            if (this.mainRule.foreground > 0)
-                arr.Add(this.mainRule);
-            arr.AddRange(this.rulesWithParentScopes);
-            return ThemeTrieElement.SortBySpecificity(arr);
+            arr = new();
+            arr.Add(mainRule);
+            arr.AddRange(rulesWithParentScopes);
+            return SortBySpecificity(arr);
         }
 
-        public void Insert(string name, int scopeDepth, string scope, List<string> parentScopes, FontStyle fontStyle, int foreground,
-                int background)
+        var dotIndex = scope.IndexOf('.');
+        string head;
+        string tail;
+        if (dotIndex == -1)
         {
-            if ("".Equals(scope))
+            head = scope;
+            tail = "";
+        }
+        else
+        {
+            head = scope.SubstringAtIndexes(0, dotIndex);
+            tail = scope.Substring(dotIndex + 1);
+        }
+
+        if (children.TryGetValue(head, out var value))
+            return value.Match(tail);
+
+        arr = new();
+        if (mainRule.foreground > 0)
+            arr.Add(mainRule);
+        arr.AddRange(rulesWithParentScopes);
+        return SortBySpecificity(arr);
+    }
+
+    public void Insert(string name, int scopeDepth, string scope, List<string> parentScopes, FontStyle fontStyle,
+        int foreground,
+        int background)
+    {
+        if ("".Equals(scope))
+        {
+            DoInsertHere(name, scopeDepth, parentScopes, fontStyle, foreground, background);
+            return;
+        }
+
+        var dotIndex = scope.IndexOf('.');
+        string head;
+        string tail;
+        if (dotIndex == -1)
+        {
+            head = scope;
+            tail = "";
+        }
+        else
+        {
+            head = scope.SubstringAtIndexes(0, dotIndex);
+            tail = scope.Substring(dotIndex + 1);
+        }
+
+        ThemeTrieElement child;
+        if (children.TryGetValue(head, out var value))
+        {
+            child = value;
+        }
+        else
+        {
+            child = new(mainRule.Clone(),
+                ThemeTrieElementRule.cloneArr(rulesWithParentScopes));
+            children[head] = child;
+        }
+
+        child.Insert(name, scopeDepth + 1, tail, parentScopes, fontStyle, foreground, background);
+    }
+
+    private void DoInsertHere(string name, int scopeDepth, List<string> parentScopes, FontStyle fontStyle,
+        int foreground,
+        int background)
+    {
+        if (parentScopes == null)
+        {
+            // Merge into the main rule
+            mainRule.AcceptOverwrite(name, scopeDepth, fontStyle, foreground, background);
+            return;
+        }
+
+        // Try to merge into existing rule
+        foreach (var rule in rulesWithParentScopes)
+            if (StringUtils.StrArrCmp(rule.parentScopes, parentScopes) == 0)
             {
-                this.DoInsertHere(name, scopeDepth, parentScopes, fontStyle, foreground, background);
+                // bingo! => we get to merge this into an existing one
+                rule.AcceptOverwrite(rule.name, scopeDepth, fontStyle, foreground, background);
                 return;
             }
 
-            int dotIndex = scope.IndexOf('.');
-            string head;
-            string tail;
-            if (dotIndex == -1)
-            {
-                head = scope;
-                tail = "";
-            }
-            else
-            {
-                head = scope.SubstringAtIndexes(0, dotIndex);
-                tail = scope.Substring(dotIndex + 1);
-            }
+        // Must add a new rule
 
-            ThemeTrieElement child;
-            if (children.TryGetValue(head, out ThemeTrieElement value))
-            {
-                child = value;
-            }
-            else
-            {
-                child = new ThemeTrieElement(this.mainRule.Clone(),
-                        ThemeTrieElementRule.cloneArr(this.rulesWithParentScopes));
-                this.children[head] = child;
-            }
+        // Inherit from main rule
+        if (string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(mainRule.name))
+            name = mainRule.name;
+        if (fontStyle == FontStyle.NotSet)
+            fontStyle = mainRule.fontStyle;
+        if (foreground == 0)
+            foreground = mainRule.foreground;
+        if (background == 0)
+            background = mainRule.background;
 
-            child.Insert(name, scopeDepth + 1, tail, parentScopes, fontStyle, foreground, background);
-        }
+        rulesWithParentScopes.Add(
+            new(name, scopeDepth, parentScopes, fontStyle, foreground, background));
+    }
 
-        private void DoInsertHere(string name, int scopeDepth, List<string> parentScopes, FontStyle fontStyle, int foreground,
-                int background)
-        {
+    public override int GetHashCode()
+    {
+        return children.GetHashCode() +
+            mainRule.GetHashCode() +
+            rulesWithParentScopes.GetHashCode();
+    }
 
-            if (parentScopes == null)
-            {
-                // Merge into the main rule
-                this.mainRule.AcceptOverwrite(name, scopeDepth, fontStyle, foreground, background);
-                return;
-            }
-
-            // Try to merge into existing rule
-            foreach (ThemeTrieElementRule rule in this.rulesWithParentScopes)
-            {
-                if (StringUtils.StrArrCmp(rule.parentScopes, parentScopes) == 0)
-                {
-                    // bingo! => we get to merge this into an existing one
-                    rule.AcceptOverwrite(rule.name,  scopeDepth, fontStyle, foreground, background);
-                    return;
-                }
-            }
-
-            // Must add a new rule
-
-            // Inherit from main rule
-            if (string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(mainRule.name))
-            {
-                name = mainRule.name;
-            }
-            if (fontStyle == FontStyle.NotSet)
-            {
-                fontStyle = this.mainRule.fontStyle;
-            }
-            if (foreground == 0)
-            {
-                foreground = this.mainRule.foreground;
-            }
-            if (background == 0)
-            {
-                background = this.mainRule.background;
-            }
-
-            this.rulesWithParentScopes.Add(
-                new ThemeTrieElementRule(name, scopeDepth, parentScopes, fontStyle, foreground, background));
-        }
-
-        public override int GetHashCode()
-        {
-            return children.GetHashCode() +
-                      mainRule.GetHashCode() +
-                      rulesWithParentScopes.GetHashCode();
-        }
-
-        public override bool Equals(object obj)
-        {
-            if (this == obj)
-            {
-                return true;
-            }
-            if (obj == null)
-            {
-                return false;
-            }
-            if (GetType() != obj.GetType())
-            {
-                return false;
-            }
-            ThemeTrieElement other = (ThemeTrieElement)obj;
-            return Object.Equals(children, other.children) && Object.Equals(mainRule, other.mainRule) && Object.Equals(rulesWithParentScopes, other.rulesWithParentScopes);
-        }
+    public override bool Equals(object obj)
+    {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (GetType() != obj.GetType())
+            return false;
+        var other = (ThemeTrieElement) obj;
+        return Equals(children, other.children) &&
+            Equals(mainRule, other.mainRule) &&
+            Equals(rulesWithParentScopes, other.rulesWithParentScopes);
     }
 }

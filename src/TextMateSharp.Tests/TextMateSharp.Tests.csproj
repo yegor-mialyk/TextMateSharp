@@ -1,36 +1,38 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
-    <IsPackable>False</IsPackable>
-    <SignAssembly>True</SignAssembly>
-    <AssemblyOriginatorKeyFile>..\TextMateSharp.snk</AssemblyOriginatorKeyFile>
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <OutputType>Exe</OutputType>
+        <LangVersion>latest</LangVersion>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <AnalysisLevel>latest</AnalysisLevel>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <EmbeddedResource Include="Resources\**\*.json" />
-  </ItemGroup>
+    <ItemGroup>
+        <EmbeddedResource Include="Resources\**\*.json"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <Compile Remove="Resources\sample.cs" />
-  </ItemGroup>
+    <ItemGroup>
+        <Compile Remove="Resources\sample.cs"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <EmbeddedResource Include="Resources\sample.cs" />
-  </ItemGroup>
+    <ItemGroup>
+        <EmbeddedResource Include="Resources\sample.cs"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="NUnit" Version="3.13.3" />
-    <PackageReference Include="NUnit3TestAdapter" Version="4.3.1" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.4.1" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="NUnit" Version="4.4.0"/>
+        <PackageReference Include="NUnit3TestAdapter" Version="5.1.0"/>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\TextMateSharp.Grammars\TextMateSharp.Grammars.csproj" />
-    <ProjectReference Include="..\TextMateSharp\TextMateSharp.csproj" />
-  </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\TextMateSharp.Grammars\TextMateSharp.Grammars.csproj"/>
+        <ProjectReference Include="..\TextMateSharp\TextMateSharp.csproj"/>
+    </ItemGroup>
 
-  <ItemGroup>
-      <PackageReference Include="Moq" Version="4.18.4" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="Moq" Version="4.20.72"/>
+    </ItemGroup>
 </Project>

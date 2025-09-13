@@ -1,14 +1,10 @@
-using System;
+namespace TextMateSharp.Model;
 
-namespace TextMateSharp.Model
+public interface ITokenizationSupport
 {
-    public interface ITokenizationSupport
-    {
-        TMState GetInitialState();
+    TMState GetInitialState();
 
-        LineTokens Tokenize(string line, TMState state, TimeSpan timeLimit);
+    LineTokens Tokenize(string line, TMState state, TimeSpan timeLimit);
 
-        LineTokens Tokenize(string line, TMState state, int offsetDelta, int maxLen, TimeSpan timeLimit);
-
-    }
+    LineTokens Tokenize(string line, TMState state, int offsetDelta, int maxLen, TimeSpan timeLimit);
 }

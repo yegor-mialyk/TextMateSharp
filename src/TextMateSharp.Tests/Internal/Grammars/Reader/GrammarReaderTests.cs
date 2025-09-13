@@ -18,7 +18,7 @@ namespace TextMateSharp.Tests.Internal.Grammars.Reader
             using (StreamReader reader = new StreamReader(ms))
             {
                 IRawGrammar grammar = GrammarReader.ReadGrammarSync(reader);
-                Assert.AreEqual("source.cs", grammar.GetScopeName());
+                Assert.Equals("source.cs", grammar.GetScopeName());
             }
         }
 
@@ -31,12 +31,12 @@ namespace TextMateSharp.Tests.Internal.Grammars.Reader
                 IRawGrammar grammar = GrammarReader.ReadGrammarSync(reader);
 
                 Assert.IsNotNull(grammar);
-                Assert.AreEqual("C#", grammar.GetName());
-                Assert.AreEqual("source.cs", grammar.GetScopeName());
+                Assert.Equals("C#", grammar.GetName());
+                Assert.Equals("source.cs", grammar.GetScopeName());
 
                 ICollection<IRawRule> patterns = grammar.GetPatterns();
 
-                Assert.AreEqual(2, patterns.Count);
+                Assert.Equals(2, patterns.Count);
 
                 int i = 0;
                 foreach (IRawRule pattern in patterns)
@@ -44,11 +44,11 @@ namespace TextMateSharp.Tests.Internal.Grammars.Reader
                     switch (i)
                     {
                         case 0:
-                            Assert.AreEqual("#preprocessor", pattern.GetInclude());
+                            Assert.Equals("#preprocessor", pattern.GetInclude());
                             break;
 
                         case 1:
-                            Assert.AreEqual("#comment", pattern.GetInclude());
+                            Assert.Equals("#comment", pattern.GetInclude());
                             break;
                     }
 
@@ -58,18 +58,18 @@ namespace TextMateSharp.Tests.Internal.Grammars.Reader
                 IRawRepository repository = grammar.GetRepository();
 
                 IRawRule rule = repository.GetProp("extern-alias-directive");
-                Assert.AreEqual("[beginregex]+", rule.GetBegin());
-                Assert.AreEqual("[endregexp]+", rule.GetEnd());
+                Assert.Equals("[beginregex]+", rule.GetBegin());
+                Assert.Equals("[endregexp]+", rule.GetEnd());
 
                 IRawCaptures captures = rule.GetBeginCaptures();
 
                 IRawRule capture1 = captures.GetCapture("1");
                 IRawRule capture2 = captures.GetCapture("2");
 
-                Assert.AreEqual(
+                Assert.Equals(
                     "keyword.other.extern.cs",
                     capture1.GetName());
-                Assert.AreEqual(
+                Assert.Equals(
                     "keyword.other.alias.cs",
                     capture2.GetName());
             }

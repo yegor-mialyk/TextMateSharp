@@ -1,105 +1,89 @@
-using System;
-using System.Collections.Generic;
+namespace TextMateSharp.Model;
 
-namespace TextMateSharp.Model
+public abstract class AbstractLineList : IModelLines
 {
-    public abstract class AbstractLineList : IModelLines
+    private readonly IList<ModelLine> _list = new List<ModelLine>();
+
+    private readonly object mLock = new();
+
+    private TMModel _model;
+
+    public void AddLine(int line)
     {
-        private IList<ModelLine> _list = new List<ModelLine>();
-
-        private TMModel _model;
-
-        public AbstractLineList()
+        lock (mLock)
         {
+            _list.Insert(line, new());
         }
+    }
 
-        public void SetModel(TMModel model)
+    public void RemoveLine(int line)
+    {
+        lock (mLock)
         {
-            this._model = model;
-            lock(mLock)
-            {
-                foreach (var line in _list)
-                {
-                    line.IsInvalid = true;
-                }
-            }
+            _list.RemoveAt(line);
         }
+    }
 
-        public void AddLine(int line)
+    public ModelLine Get(int index)
+    {
+        lock (mLock)
         {
-            lock (mLock)
-            {
-                this._list.Insert(line, new ModelLine());
-            }
-        }
+            if (index < 0 || index >= _list.Count)
+                return null;
 
-        public void RemoveLine(int line)
+            return _list[index];
+        }
+    }
+
+    public void ForEach(Action<ModelLine> action)
+    {
+        lock (mLock)
         {
-            lock (mLock)
-            {
-                this._list.RemoveAt(line);
-            }
+            foreach (var modelLine in _list)
+                action(modelLine);
         }
+    }
 
-        public ModelLine Get(int index)
+    public int GetSize()
+    {
+        return GetNumberOfLines();
+    }
+
+    public abstract void UpdateLine(int lineIndex);
+
+    public abstract int GetNumberOfLines();
+
+    public abstract string GetLineText(int lineIndex);
+
+    public abstract int GetLineLength(int lineIndex);
+
+    public abstract void Dispose();
+
+    public void SetModel(TMModel model)
+    {
+        _model = model;
+        lock (mLock)
         {
-            lock (mLock)
-            {
-                if (index < 0 || index >= this._list.Count)
-                    return null;
-
-                return this._list[index];
-            }
+            foreach (var line in _list)
+                line.IsInvalid = true;
         }
+    }
 
-        public void ForEach(Action<ModelLine> action)
-        {
-            lock (mLock)
-            {
-                foreach (ModelLine modelLine in _list)
-                    action(modelLine);
-            }
-        }
+    protected void InvalidateLine(int lineIndex)
+    {
+        if (_model != null)
+            _model.InvalidateLine(lineIndex);
+    }
 
-        protected void InvalidateLine(int lineIndex)
-        {
-            if (_model != null)
-            {
-                _model.InvalidateLine(lineIndex);
-            }
-        }
+    protected void InvalidateLineRange(int iniLineIndex, int endLineIndex)
+    {
+        if (_model != null)
+            _model.InvalidateLineRange(iniLineIndex, endLineIndex);
+    }
 
-        protected void InvalidateLineRange(int iniLineIndex, int endLineIndex)
-        {
-            if (_model != null)
-            {
-                _model.InvalidateLineRange(iniLineIndex, endLineIndex);
-            }
-        }
-
-        protected void ForceTokenization(int startLineIndex, int endLineIndex)
-        {
-            if (_model != null)
-            {
-                _model.ForceTokenization(startLineIndex, endLineIndex);
-            }
-        }
-
-        public int GetSize()
-        {
-            return GetNumberOfLines();
-        }
-
-        public abstract void UpdateLine(int lineIndex);
-
-        public abstract int GetNumberOfLines();
-
-        public abstract string GetLineText(int lineIndex); 
-
-        public abstract int GetLineLength(int lineIndex); 
-
-        public abstract void Dispose(); 
-
-        object mLock = new object();
+    protected void ForceTokenization(int startLineIndex, int endLineIndex)
+    {
+        if (_model != null)
+            _model.ForceTokenization(startLineIndex, endLineIndex);
     }
 }

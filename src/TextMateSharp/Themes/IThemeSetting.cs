@@ -1,11 +1,10 @@
-namespace TextMateSharp.Themes
+namespace TextMateSharp.Themes;
+
+public interface IThemeSetting
 {
-    public interface IThemeSetting
-    {
-        object GetFontStyle();
+    object? GetFontStyle();
 
-        string GetBackground();
+    string? GetBackground();
 
-        string GetForeground();
-    }
+    string? GetForeground();
 }

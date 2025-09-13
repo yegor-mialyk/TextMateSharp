@@ -2,7 +2,7 @@
   "profiles": {
     "TextMateSharp.Demo - normalfile": {
       "commandName": "Project",
-      "commandLineArgs": "../../../testdata/samplefiles/sample.cs"
+      "commandLineArgs": "D:\\MY\\TextMateSharp\\src\\TextMateSharp.Demo\\Program.cs"
     },
     "TexMateSharp.Demo - bigfile": {
       "commandName": "Project",

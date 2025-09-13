@@ -1,39 +1,38 @@
-using System.Collections.Generic;
+namespace TextMateSharp.Internal.Rules;
 
-namespace TextMateSharp.Internal.Rules
+public class IncludeOnlyRule : Rule
 {
-    public class IncludeOnlyRule : Rule
+    private RegExpSourceList _cachedCompiledPatterns;
+
+    public IncludeOnlyRule(RuleId id, string name, string contentName, CompilePatternsResult patterns) : base(id, name,
+        contentName)
     {
-        public bool HasMissingPatterns { get; private set; }
-        public IList<RuleId> Patterns { get; private set; }
+        Patterns = patterns.Patterns;
+        HasMissingPatterns = patterns.HasMissingPatterns;
 
-        private RegExpSourceList _cachedCompiledPatterns;
+        _cachedCompiledPatterns = null;
+    }
 
-        public IncludeOnlyRule(RuleId id, string name, string contentName, CompilePatternsResult patterns) : base(id, name, contentName)
+    public bool HasMissingPatterns { get; private set; }
+    public IList<RuleId> Patterns { get; }
+
+    public override void CollectPatternsRecursive(IRuleRegistry grammar, RegExpSourceList sourceList, bool isFirst)
+    {
+        foreach (var pattern in Patterns)
         {
-            Patterns = patterns.Patterns;
-            HasMissingPatterns = patterns.HasMissingPatterns;
+            var rule = grammar.GetRule(pattern);
+            rule.CollectPatternsRecursive(grammar, sourceList, false);
+        }
+    }
 
-            _cachedCompiledPatterns = null;
+    public override CompiledRule Compile(IRuleRegistry grammar, string endRegexSource, bool allowA, bool allowG)
+    {
+        if (_cachedCompiledPatterns == null)
+        {
+            _cachedCompiledPatterns = new();
+            CollectPatternsRecursive(grammar, _cachedCompiledPatterns, true);
         }
 
-        public override void CollectPatternsRecursive(IRuleRegistry grammar, RegExpSourceList sourceList, bool isFirst)
-        {
-            foreach (var pattern in this.Patterns)
-            {
-                Rule rule = grammar.GetRule(pattern);
-                rule.CollectPatternsRecursive(grammar, sourceList, false);
-            }
-        }
-
-        public override CompiledRule Compile(IRuleRegistry grammar, string endRegexSource, bool allowA, bool allowG)
-        {
-            if (this._cachedCompiledPatterns == null)
-            {
-                this._cachedCompiledPatterns = new RegExpSourceList();
-                this.CollectPatternsRecursive(grammar, this._cachedCompiledPatterns, true);
-            }
-            return this._cachedCompiledPatterns.Compile(allowA, allowG);
-        }
+        return _cachedCompiledPatterns.Compile(allowA, allowG);
     }
 }

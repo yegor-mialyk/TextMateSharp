@@ -1,94 +1,82 @@
-using System.Collections.Generic;
 using Onigwrap;
 
-namespace TextMateSharp.Internal.Rules
+namespace TextMateSharp.Internal.Rules;
+
+public class BeginEndRule : Rule
 {
-    public class BeginEndRule : Rule
+    private readonly RegExpSource _begin;
+    private readonly RegExpSource _end;
+    private RegExpSourceList _cachedCompiledPatterns;
+
+    public BeginEndRule(RuleId id, string name, string contentName, string begin, List<CaptureRule> beginCaptures,
+        string end, List<CaptureRule> endCaptures, bool applyEndPatternLast, CompilePatternsResult patterns)
+        : base(id, name, contentName)
     {
-        public List<CaptureRule> BeginCaptures { get; private set; }
-        public bool EndHasBackReferences { get; private set; }
-        public List<CaptureRule> EndCaptures { get; private set; }
-        public bool ApplyEndPatternLast { get; private set; }
-        public bool HasMissingPatterns { get; private set; }
-        public IList<RuleId> Patterns { get; private set; }
+        _begin = new(begin, Id);
+        _end = new(end, RuleId.END_RULE);
 
-        private RegExpSource _begin;
-        private RegExpSource _end;
-        private RegExpSourceList _cachedCompiledPatterns;
+        BeginCaptures = beginCaptures;
+        EndHasBackReferences = _end.HasBackReferences();
+        EndCaptures = endCaptures;
+        ApplyEndPatternLast = applyEndPatternLast;
+        Patterns = patterns.Patterns;
+        HasMissingPatterns = patterns.HasMissingPatterns;
 
-        public BeginEndRule(RuleId id, string name, string contentName, string begin, List<CaptureRule> beginCaptures,
-            string end, List<CaptureRule> endCaptures, bool applyEndPatternLast, CompilePatternsResult patterns)
-            : base(id, name, contentName)
-        {
-            _begin = new RegExpSource(begin, this.Id);
-            _end = new RegExpSource(end, RuleId.END_RULE);
+        _cachedCompiledPatterns = null;
+    }
 
-            BeginCaptures = beginCaptures;
-            EndHasBackReferences = _end.HasBackReferences();
-            EndCaptures = endCaptures;
-            ApplyEndPatternLast = applyEndPatternLast;
-            Patterns = patterns.Patterns;
-            HasMissingPatterns = patterns.HasMissingPatterns;
+    public List<CaptureRule> BeginCaptures { get; private set; }
+    public bool EndHasBackReferences { get; private set; }
+    public List<CaptureRule> EndCaptures { get; private set; }
+    public bool ApplyEndPatternLast { get; }
+    public bool HasMissingPatterns { get; private set; }
+    public IList<RuleId> Patterns { get; }
 
-            _cachedCompiledPatterns = null;
-        }
+    public string GetEndWithResolvedBackReferences(string lineText, IOnigCaptureIndex[] captureIndices)
+    {
+        return _end.ResolveBackReferences(lineText, captureIndices);
+    }
 
-        public string GetEndWithResolvedBackReferences(string lineText, IOnigCaptureIndex[] captureIndices)
-        {
-            return this._end.ResolveBackReferences(lineText, captureIndices);
-        }
-
-        public override void CollectPatternsRecursive(IRuleRegistry grammar, RegExpSourceList sourceList, bool isFirst)
-        {
-            if (isFirst)
+    public override void CollectPatternsRecursive(IRuleRegistry grammar, RegExpSourceList sourceList, bool isFirst)
+    {
+        if (isFirst)
+            foreach (var pattern in Patterns)
             {
-                foreach (RuleId pattern in this.Patterns)
-                {
-                    Rule rule = grammar.GetRule(pattern);
-                    rule.CollectPatternsRecursive(grammar, sourceList, false);
-                }
+                var rule = grammar.GetRule(pattern);
+                rule.CollectPatternsRecursive(grammar, sourceList, false);
             }
+        else
+            sourceList.Push(_begin);
+    }
+
+    public override CompiledRule Compile(IRuleRegistry grammar, string endRegexSource, bool allowA, bool allowG)
+    {
+        var precompiled = Precompile(grammar);
+        if (_end.HasBackReferences())
+        {
+            if (ApplyEndPatternLast)
+                precompiled.SetSource(precompiled.Length() - 1, endRegexSource);
             else
-            {
-                sourceList.Push(this._begin);
-            }
+                precompiled.SetSource(0, endRegexSource);
         }
 
-        public override CompiledRule Compile(IRuleRegistry grammar, string endRegexSource, bool allowA, bool allowG)
+        return _cachedCompiledPatterns.Compile(allowA, allowG);
+    }
+
+    private RegExpSourceList Precompile(IRuleRegistry grammar)
+    {
+        if (_cachedCompiledPatterns == null)
         {
-            RegExpSourceList precompiled = this.Precompile(grammar);
-            if (this._end.HasBackReferences())
-            {
-                if (this.ApplyEndPatternLast)
-                {
-                    precompiled.SetSource(precompiled.Length() - 1, endRegexSource);
-                }
-                else
-                {
-                    precompiled.SetSource(0, endRegexSource);
-                }
-            }
-            return this._cachedCompiledPatterns.Compile(allowA, allowG);
+            _cachedCompiledPatterns = new();
+
+            CollectPatternsRecursive(grammar, _cachedCompiledPatterns, true);
+
+            if (ApplyEndPatternLast)
+                _cachedCompiledPatterns.Push(_end.HasBackReferences() ? _end.Clone() : _end);
+            else
+                _cachedCompiledPatterns.UnShift(_end.HasBackReferences() ? _end.Clone() : _end);
         }
 
-        private RegExpSourceList Precompile(IRuleRegistry grammar)
-        {
-            if (this._cachedCompiledPatterns == null)
-            {
-                this._cachedCompiledPatterns = new RegExpSourceList();
-
-                this.CollectPatternsRecursive(grammar, this._cachedCompiledPatterns, true);
-
-                if (this.ApplyEndPatternLast)
-                {
-                    this._cachedCompiledPatterns.Push(this._end.HasBackReferences() ? this._end.Clone() : this._end);
-                }
-                else
-                {
-                    this._cachedCompiledPatterns.UnShift(this._end.HasBackReferences() ? this._end.Clone() : this._end);
-                }
-            }
-            return this._cachedCompiledPatterns;
-        }
+        return _cachedCompiledPatterns;
     }
 }

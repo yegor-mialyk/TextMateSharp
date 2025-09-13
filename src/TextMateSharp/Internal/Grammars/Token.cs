@@ -1,38 +1,35 @@
-using System.Collections.Generic;
 using System.Text;
-
 using TextMateSharp.Grammars;
 
-namespace TextMateSharp.Internal.Grammars
+namespace TextMateSharp.Internal.Grammars;
+
+internal class Token : IToken
 {
-    class Token : IToken
+    public Token(int startIndex, int endIndex, List<string> scopes)
     {
-        public int StartIndex { get; set; }
+        StartIndex = startIndex;
+        EndIndex = endIndex;
+        Scopes = scopes;
+    }
 
-        public int EndIndex { get; private set; }
+    public int StartIndex { get; set; }
 
-        public int Length { get { return EndIndex - StartIndex; } }
+    public int EndIndex { get; }
 
-        public List<string> Scopes { get; private set; }
+    public int Length => EndIndex - StartIndex;
 
-        public Token(int startIndex, int endIndex, List<string> scopes)
-        {
-            StartIndex = startIndex;
-            EndIndex = endIndex;
-            Scopes = scopes;
-        }
+    public List<string> Scopes { get; }
 
-        public override string ToString()
-        {
-            StringBuilder s = new StringBuilder();
-            s.Append("{startIndex: ");
-            s.Append(StartIndex);
-            s.Append(", endIndex: ");
-            s.Append(EndIndex);
-            s.Append(", scopes: ");
-            s.Append(string.Join(", ", Scopes));
-            s.Append('}');
-            return s.ToString();
-        }
+    public override string ToString()
+    {
+        var s = new StringBuilder();
+        s.Append("{startIndex: ");
+        s.Append(StartIndex);
+        s.Append(", endIndex: ");
+        s.Append(EndIndex);
+        s.Append(", scopes: ");
+        s.Append(string.Join(", ", Scopes));
+        s.Append('}');
+        return s.ToString();
     }
 }

@@ -1,12 +1,8 @@
-using System.Collections.Generic;
+namespace TextMateSharp.Themes;
 
-namespace TextMateSharp.Themes
+public interface IThemeProvider
 {
-    public interface IThemeProvider
-    {
+    List<ThemeTrieElementRule> ThemeMatch(IList<string> scopeNames);
 
-        List<ThemeTrieElementRule> ThemeMatch(IList<string> scopeNames);
-
-        ThemeTrieElementRule GetDefaults();
-    }
+    ThemeTrieElementRule GetDefaults();
 }

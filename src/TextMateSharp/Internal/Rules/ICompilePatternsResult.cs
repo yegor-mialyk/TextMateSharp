@@ -1,16 +1,13 @@
-using System.Collections.Generic;
+namespace TextMateSharp.Internal.Rules;
 
-namespace TextMateSharp.Internal.Rules
+public class CompilePatternsResult
 {
-    public class CompilePatternsResult
+    public CompilePatternsResult(IList<RuleId> patterns, bool hasMissingPatterns)
     {
-        public IList<RuleId> Patterns { get; private set; }
-        public bool HasMissingPatterns { get; private set; }
-
-        public CompilePatternsResult(IList<RuleId> patterns, bool hasMissingPatterns)
-        {
-            HasMissingPatterns = hasMissingPatterns;
-            Patterns = patterns;
-        }
+        HasMissingPatterns = hasMissingPatterns;
+        Patterns = patterns;
     }
+
+    public IList<RuleId> Patterns { get; private set; }
+    public bool HasMissingPatterns { get; private set; }
 }

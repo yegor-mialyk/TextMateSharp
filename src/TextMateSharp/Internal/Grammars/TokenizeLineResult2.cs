@@ -1,18 +1,17 @@
 using TextMateSharp.Grammars;
 
-namespace TextMateSharp.Internal.Grammars
-{
-    public class TokenizeLineResult2 : ITokenizeLineResult2
-    {
-        public int[] Tokens { get; private set; }
-        public IStateStack RuleStack { get; private set; }
-        public bool StoppedEarly { get; private set; }
+namespace TextMateSharp.Internal.Grammars;
 
-        public TokenizeLineResult2(int[] tokens, IStateStack ruleStack, bool stoppedEarly)
-        {
-            Tokens = tokens;
-            RuleStack = ruleStack;
-            StoppedEarly = stoppedEarly;
-        }
+public class TokenizeLineResult2 : ITokenizeLineResult2
+{
+    public TokenizeLineResult2(int[] tokens, IStateStack ruleStack, bool stoppedEarly)
+    {
+        Tokens = tokens;
+        RuleStack = ruleStack;
+        StoppedEarly = stoppedEarly;
     }
+
+    public bool StoppedEarly { get; private set; }
+    public int[] Tokens { get; }
+    public IStateStack RuleStack { get; }
 }

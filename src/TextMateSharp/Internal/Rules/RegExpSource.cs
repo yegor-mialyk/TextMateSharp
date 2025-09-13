@@ -1,185 +1,173 @@
-using System;
-using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 using System.Text.RegularExpressions;
 using Onigwrap;
-
 using TextMateSharp.Internal.Utils;
 
-namespace TextMateSharp.Internal.Rules
+namespace TextMateSharp.Internal.Rules;
+
+public class RegExpSource
 {
-    public class RegExpSource
+    private static readonly Regex HAS_BACK_REFERENCES = new("\\\\(\\d+)");
+    private static readonly Regex BACK_REFERENCING_END = new("\\\\(\\d+)");
+    private readonly bool _hasBackReferences;
+
+    private readonly RuleId _ruleId;
+    private RegExpSourceAnchorCache _anchorCache;
+    private bool _hasAnchor;
+    private string _source;
+
+    public RegExpSource(string regExpSource, RuleId ruleId) :
+        this(regExpSource, ruleId, true)
     {
+    }
 
-        private static Regex HAS_BACK_REFERENCES = new Regex("\\\\(\\d+)");
-        private static Regex BACK_REFERENCING_END = new Regex("\\\\(\\d+)");
-
-        private RuleId _ruleId;
-        private bool _hasAnchor;
-        private bool _hasBackReferences;
-        private RegExpSourceAnchorCache _anchorCache;
-        private string _source;
-
-        public RegExpSource(string regExpSource, RuleId ruleId) :
-            this(regExpSource, ruleId, true)
+    public RegExpSource(string regExpSource, RuleId ruleId, bool handleAnchors)
+    {
+        if (handleAnchors)
         {
+            HandleAnchors(regExpSource);
+        }
+        else
+        {
+            _source = regExpSource;
+            _hasAnchor = false;
         }
 
-        public RegExpSource(string regExpSource, RuleId ruleId, bool handleAnchors)
+        if (_hasAnchor)
+            _anchorCache = BuildAnchorCache();
+
+        _ruleId = ruleId;
+        _hasBackReferences = HAS_BACK_REFERENCES.Match(_source).Success;
+    }
+
+    public RegExpSource Clone()
+    {
+        return new(_source, _ruleId, true);
+    }
+
+    public void SetSource(string newSource)
+    {
+        if (_source.Equals(newSource))
+            return;
+        _source = newSource;
+
+        if (_hasAnchor)
+            _anchorCache = BuildAnchorCache();
+    }
+
+    private void HandleAnchors(string regExpSource)
+    {
+        if (regExpSource != null)
         {
-            if (handleAnchors)
+            var len = regExpSource.Length;
+            char ch;
+            char nextCh;
+            var lastPushedPos = 0;
+            var output = new StringBuilder();
+
+            var hasAnchor = false;
+            for (var pos = 0; pos < len; pos++)
             {
-                this.HandleAnchors(regExpSource);
-            }
-            else
-            {
-                this._source = regExpSource;
-                this._hasAnchor = false;
-            }
+                ch = regExpSource[pos];
 
-            if (this._hasAnchor)
-            {
-                this._anchorCache = this.BuildAnchorCache();
-            }
-
-            this._ruleId = ruleId;
-            this._hasBackReferences = HAS_BACK_REFERENCES.Match(this._source).Success;
-        }
-
-        public RegExpSource Clone()
-        {
-            return new RegExpSource(this._source, this._ruleId, true);
-        }
-
-        public void SetSource(string newSource)
-        {
-            if (this._source.Equals(newSource))
-            {
-                return;
-            }
-            this._source = newSource;
-
-            if (this._hasAnchor)
-            {
-                this._anchorCache = this.BuildAnchorCache();
-            }
-        }
-
-        private void HandleAnchors(string regExpSource)
-        {
-            if (regExpSource != null)
-            {
-                int len = regExpSource.Length;
-                char ch;
-                char nextCh;
-                int lastPushedPos = 0;
-                StringBuilder output = new StringBuilder();
-
-                bool hasAnchor = false;
-                for (int pos = 0; pos < len; pos++)
-                {
-                    ch = regExpSource[pos];
-
-                    if (ch == '\\')
+                if (ch == '\\')
+                    if (pos + 1 < len)
                     {
-                        if (pos + 1 < len)
+                        nextCh = regExpSource[pos + 1];
+                        if (nextCh == 'z')
                         {
-                            nextCh = regExpSource[pos + 1];
-                            if (nextCh == 'z')
-                            {
-                                output.Append(regExpSource.SubstringAtIndexes(lastPushedPos, pos));
-                                output.Append("$(?!\\n)(?<!\\n)");
-                                lastPushedPos = pos + 2;
-                            }
-                            else if (nextCh == 'A' || nextCh == 'G')
-                            {
-                                hasAnchor = true;
-                            }
-                            pos++;
+                            output.Append(regExpSource.SubstringAtIndexes(lastPushedPos, pos));
+                            output.Append("$(?!\\n)(?<!\\n)");
+                            lastPushedPos = pos + 2;
                         }
-                    }
-                }
+                        else if (nextCh == 'A' || nextCh == 'G')
+                        {
+                            hasAnchor = true;
+                        }
 
-                this._hasAnchor = hasAnchor;
-                if (lastPushedPos == 0)
-                {
-                    // No \z hit
-                    this._source = regExpSource;
-                }
-                else
-                {
-                    output.Append(regExpSource.SubstringAtIndexes(lastPushedPos, len));
-                    this._source = output.ToString();
-                }
+                        pos++;
+                    }
+            }
+
+            _hasAnchor = hasAnchor;
+            if (lastPushedPos == 0)
+            {
+                // No \z hit
+                _source = regExpSource;
             }
             else
             {
-                this._hasAnchor = false;
-                this._source = regExpSource;
+                output.Append(regExpSource.SubstringAtIndexes(lastPushedPos, len));
+                _source = output.ToString();
             }
         }
-
-        public string ResolveBackReferences(string lineText, IOnigCaptureIndex[] captureIndices)
+        else
         {
-            List<string> capturedValues = new List<string>();
+            _hasAnchor = false;
+            _source = regExpSource;
+        }
+    }
 
-            try
+    public string ResolveBackReferences(string lineText, IOnigCaptureIndex[] captureIndices)
+    {
+        var capturedValues = new List<string>();
+
+        try
+        {
+            foreach (var captureIndex in captureIndices)
+                capturedValues.Add(lineText.SubstringAtIndexes(
+                    captureIndex.Start,
+                    captureIndex.End));
+
+            return BACK_REFERENCING_END.Replace(_source, m =>
             {
-                foreach (IOnigCaptureIndex captureIndex in captureIndices)
+                try
                 {
-                    capturedValues.Add(lineText.SubstringAtIndexes(
-                        captureIndex.Start,
-                        captureIndex.End));
+                    var value = m.Value;
+                    var index = int.Parse(m.Value.SubstringAtIndexes(1, value.Length));
+                    return EscapeRegExpCharacters(capturedValues.Count > index ? capturedValues[index] : "");
                 }
-
-                return BACK_REFERENCING_END.Replace(this._source, m =>
+                catch (Exception)
                 {
-                    try
-                    {
-                        string value = m.Value;
-                        int index = int.Parse(m.Value.SubstringAtIndexes(1, value.Length));
-                        return EscapeRegExpCharacters(capturedValues.Count > index ? capturedValues[index] : "");
-                    }
-                    catch (Exception)
-                    {
-                        return "";
-                    }
-                });
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine(ex.Message);
-            }
-
-            return lineText;
+                    return "";
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex.Message);
         }
 
-        private string EscapeRegExpCharacters(string value)
+        return lineText;
+    }
+
+    private string EscapeRegExpCharacters(string value)
+    {
+        var valueLen = value.Length;
+        var sb = new StringBuilder(valueLen);
+        for (var i = 0; i < valueLen; i++)
         {
-            int valueLen = value.Length;
-            var sb = new StringBuilder(valueLen);
-            for (int i = 0; i < valueLen; i++)
+            var ch = value[i];
+            switch (ch)
             {
-                char ch = value[i];
-                switch (ch)
-                {
-                    case '-':
-                    case '\\':
-                    case '{':
-                    case '}':
-                    case '*':
-                    case '+':
-                    case '?':
-                    case '|':
-                    case '^':
-                    case '$':
-                    case '.':
-                    case ',':
-                    case '[':
-                    case ']':
-                    case '(':
-                    case ')':
-                    case '#':
+                case '-':
+                case '\\':
+                case '{':
+                case '}':
+                case '*':
+                case '+':
+                case '?':
+                case '|':
+                case '^':
+                case '$':
+                case '.':
+                case ',':
+                case '[':
+                case ']':
+                case '(':
+                case ')':
+                case '#':
                     /* escaping white space chars is actually not necessary:
                     case ' ':
                     case '\t':
@@ -190,111 +178,110 @@ namespace TextMateSharp.Internal.Rules
                     */
                     sb.Append('\\');
                     break;
-                }
-                sb.Append(ch);
             }
-            return sb.ToString();
+
+            sb.Append(ch);
         }
 
-        private RegExpSourceAnchorCache BuildAnchorCache()
+        return sb.ToString();
+    }
+
+    private RegExpSourceAnchorCache BuildAnchorCache()
+    {
+        var source = _source;
+        var sourceLen = source.Length;
+
+        var A0_G0_result = new StringBuilder(sourceLen);
+        var A0_G1_result = new StringBuilder(sourceLen);
+        var A1_G0_result = new StringBuilder(sourceLen);
+        var A1_G1_result = new StringBuilder(sourceLen);
+
+        int pos;
+        int len;
+        char ch;
+        char nextCh;
+
+        for (pos = 0, len = sourceLen; pos < len; pos++)
         {
-            string source = this._source;
-            var sourceLen = source.Length;
+            ch = source[pos];
+            A0_G0_result.Append(ch);
+            A0_G1_result.Append(ch);
+            A1_G0_result.Append(ch);
+            A1_G1_result.Append(ch);
 
-            StringBuilder A0_G0_result = new StringBuilder(sourceLen);
-            StringBuilder A0_G1_result = new StringBuilder(sourceLen);
-            StringBuilder A1_G0_result = new StringBuilder(sourceLen);
-            StringBuilder A1_G1_result = new StringBuilder(sourceLen);
-
-            int pos;
-            int len;
-            char ch;
-            char nextCh;
-
-            for (pos = 0, len = sourceLen; pos < len; pos++)
-            {
-                ch = source[pos];
-                A0_G0_result.Append(ch);
-                A0_G1_result.Append(ch);
-                A1_G0_result.Append(ch);
-                A1_G1_result.Append(ch);
-
-                if (ch == '\\')
+            if (ch == '\\')
+                if (pos + 1 < len)
                 {
-                    if (pos + 1 < len)
+                    nextCh = source[pos + 1];
+                    if (nextCh == 'A')
                     {
-                        nextCh = source[pos + 1];
-                        if (nextCh == 'A')
-                        {
-                            A0_G0_result.Append('\uFFFF');
-                            A0_G1_result.Append('\uFFFF');
-                            A1_G0_result.Append('A');
-                            A1_G1_result.Append('A');
-                        }
-                        else if (nextCh == 'G')
-                        {
-                            A0_G0_result.Append('\uFFFF');
-                            A0_G1_result.Append('G');
-                            A1_G0_result.Append('\uFFFF');
-                            A1_G1_result.Append('G');
-                        }
-                        else
-                        {
-                            A0_G0_result.Append(nextCh);
-                            A0_G1_result.Append(nextCh);
-                            A1_G0_result.Append(nextCh);
-                            A1_G1_result.Append(nextCh);
-                        }
-                        pos++;
+                        A0_G0_result.Append('\uFFFF');
+                        A0_G1_result.Append('\uFFFF');
+                        A1_G0_result.Append('A');
+                        A1_G1_result.Append('A');
                     }
+                    else if (nextCh == 'G')
+                    {
+                        A0_G0_result.Append('\uFFFF');
+                        A0_G1_result.Append('G');
+                        A1_G0_result.Append('\uFFFF');
+                        A1_G1_result.Append('G');
+                    }
+                    else
+                    {
+                        A0_G0_result.Append(nextCh);
+                        A0_G1_result.Append(nextCh);
+                        A1_G0_result.Append(nextCh);
+                        A1_G1_result.Append(nextCh);
+                    }
+
+                    pos++;
                 }
-            }
-
-            return new RegExpSourceAnchorCache(
-                A0_G0_result.ToString(),
-                A0_G1_result.ToString(),
-                A1_G0_result.ToString(),
-                A1_G1_result.ToString());
         }
 
-        public string ResolveAnchors(bool allowA, bool allowG)
+        return new(
+            A0_G0_result.ToString(),
+            A0_G1_result.ToString(),
+            A1_G0_result.ToString(),
+            A1_G1_result.ToString());
+    }
+
+    public string ResolveAnchors(bool allowA, bool allowG)
+    {
+        if (!_hasAnchor)
+            return _source;
+
+        if (allowA)
         {
-            if (!this._hasAnchor)
-                return this._source;
-
-            if (allowA)
-            {
-                if (allowG)
-                    return this._anchorCache.A1_G1;
-
-                return this._anchorCache.A1_G0;
-            }
-
             if (allowG)
-                return this._anchorCache.A0_G1;
+                return _anchorCache.A1_G1;
 
-            return this._anchorCache.A0_G0;
+            return _anchorCache.A1_G0;
         }
 
-        public bool HasAnchor()
-        {
-            return this._hasAnchor;
-        }
+        if (allowG)
+            return _anchorCache.A0_G1;
 
-        public string GetSource()
-        {
-            return this._source;
-        }
+        return _anchorCache.A0_G0;
+    }
 
-        public RuleId GetRuleId()
-        {
-            return this._ruleId;
-        }
+    public bool HasAnchor()
+    {
+        return _hasAnchor;
+    }
 
-        public bool HasBackReferences()
-        {
-            return this._hasBackReferences;
-        }
+    public string GetSource()
+    {
+        return _source;
+    }
 
+    public RuleId GetRuleId()
+    {
+        return _ruleId;
+    }
+
+    public bool HasBackReferences()
+    {
+        return _hasBackReferences;
     }
 }

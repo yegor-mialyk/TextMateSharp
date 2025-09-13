@@ -1,9 +1,8 @@
 using TextMateSharp.Internal.Types;
 
-namespace TextMateSharp.Internal.Rules
+namespace TextMateSharp.Internal.Rules;
+
+public interface IGrammarRegistry
 {
-    public interface IGrammarRegistry
-    {
-        IRawGrammar GetExternalGrammar(string scopeName, IRawRepository repository);
-    }
+    IRawGrammar GetExternalGrammar(string scopeName, IRawRepository repository);
 }

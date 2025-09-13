@@ -1,159 +1,131 @@
-using System;
-using System.Collections.Generic;
 using System.Text;
-
 using TextMateSharp.Internal.Grammars.Parser;
 using TextMateSharp.Internal.Themes;
 
-namespace TextMateSharp.Internal.Parser
+namespace TextMateSharp.Internal.Parser;
+
+public class PList<T>
 {
-    public class PList<T>
+    private readonly bool _theme;
+    private PListObject? _currObject;
+    private T _result;
+    private StringBuilder? _text;
+
+    public PList(bool theme)
     {
-        private bool theme;
-        private List<string> errors;
-        private PListObject currObject;
-        private T result;
-        private StringBuilder text;
+        _theme = theme;
+    }
 
-        public PList(bool theme)
-        {
-            this.theme = theme;
-            this.errors = new List<string>();
-            this.currObject = null;
-        }
+    public void StartElement(string tagName)
+    {
+        if ("dict".Equals(tagName))
+            _currObject = Create(_currObject, false);
+        else if ("array".Equals(tagName))
+            _currObject = Create(_currObject, true);
+        else if ("key".Equals(tagName))
+            _currObject?.SetLastKey(null);
 
-        public void StartElement(string tagName)
-        {
-            if ("dict".Equals(tagName))
-            {
-                this.currObject = Create(currObject, false);
-            }
-            else if ("array".Equals(tagName))
-            {
-                this.currObject = Create(currObject, true);
-            }
-            else if ("key".Equals(tagName))
-            {
-                if (currObject != null)
-                {
-                    currObject.SetLastKey(null);
-                }
-            }
-            this.text ??= new StringBuilder("");
-            this.text.Clear();
-        }
+        _text ??= new();
+        _text.Clear();
+    }
 
-        private PListObject Create(PListObject parent, bool valueAsArray)
-        {
-            if (theme)
-            {
-                return new PListTheme(parent, valueAsArray);
-            }
-            return new PListGrammar(parent, valueAsArray);
-        }
+    private PListObject Create(PListObject parent, bool valueAsArray)
+    {
+        if (_theme)
+            return new PListTheme(parent, valueAsArray);
+        return new PListGrammar(parent, valueAsArray);
+    }
 
-        public void EndElement(string tagName)
+    public void EndElement(string tagName)
+    {
+        object? value = null;
+        var s = _text?.ToString();
+        if ("key".Equals(tagName))
         {
-            object value = null;
-            string text = this.text.ToString();
-            if ("key".Equals(tagName))
-            {
-                if (currObject == null || currObject.IsValueAsArray())
-                {
-                    errors.Add("key can only be used inside an open dict element");
-                    return;
-                }
-                currObject.SetLastKey(text);
+            if (_currObject == null || _currObject.IsValueAsArray())
                 return;
-            }
-            else if ("dict".Equals(tagName) || "array".Equals(tagName))
+
+            _currObject.SetLastKey(s);
+            return;
+        }
+
+        if ("dict".Equals(tagName) || "array".Equals(tagName))
+        {
+            if (_currObject == null)
+                return;
+
+            value = _currObject.GetValue();
+            _currObject = _currObject.parent;
+        }
+        else if ("string".Equals(tagName) || "data".Equals(tagName))
+        {
+            value = s;
+        }
+        else if ("date".Equals(tagName))
+        {
+            // TODO : parse date
+        }
+        else if ("integer".Equals(tagName))
+        {
+            try
             {
-                if (currObject == null)
-                {
-                    errors.Add(tagName + " closing tag found, without opening tag");
-                    return;
-                }
-                value = currObject.GetValue();
-                currObject = currObject.parent;
+                value = int.Parse(s);
             }
-            else if ("string".Equals(tagName) || "data".Equals(tagName))
-            {
-                value = text;
-            }
-            else if ("date".Equals(tagName))
-            {
-                // TODO : parse date
-            }
-            else if ("integer".Equals(tagName))
-            {
-                try
-                {
-                    value = int.Parse(text);
-                }
-                catch (Exception)
-                {
-                    errors.Add(text + " is not a integer");
-                    return;
-                }
-            }
-            else if ("real".Equals(tagName))
-            {
-                try
-                {
-                    value = float.Parse(text);
-                }
-                catch (Exception)
-                {
-                    errors.Add(text + " is not a float");
-                    return;
-                }
-            }
-            else if ("true".Equals(tagName))
-            {
-                value = true;
-            }
-            else if ("false".Equals(tagName))
-            {
-                value = false;
-            }
-            else if ("plist".Equals(tagName))
+            catch (Exception)
             {
                 return;
             }
-            else
+        }
+        else if ("real".Equals(tagName))
+        {
+            try
             {
-                errors.Add("Invalid tag name: " + tagName);
+                value = float.Parse(s);
+            }
+            catch (Exception)
+            {
                 return;
             }
-            if (currObject == null)
-            {
-                result = (T)value;
-            }
-            else if (currObject.IsValueAsArray())
-            {
-                currObject.AddValue(value);
-            }
-            else
-            {
-                if (currObject.GetLastKey() != null)
-                {
-                    currObject.AddValue(value);
-                }
-                else
-                {
-                    errors.Add("Dictionary key missing for value " + value);
-                }
-            }
+        }
+        else if ("true".Equals(tagName))
+        {
+            value = true;
+        }
+        else if ("false".Equals(tagName))
+        {
+            value = false;
+        }
+        else if ("plist".Equals(tagName))
+        {
+            return;
+        }
+        else
+        {
+            return;
         }
 
-        public void AddString(string str)
+        if (_currObject == null)
         {
-            this.text.Append(str);
+            _result = (T) value;
         }
+        else if (_currObject.IsValueAsArray())
+        {
+            _currObject.AddValue(value);
+        }
+        else
+        {
+            if (_currObject.GetLastKey() != null)
+                _currObject.AddValue(value);
+        }
+    }
 
-        public T GetResult()
-        {
-            return result;
-        }
+    public void AddString(string? str)
+    {
+        _text?.Append(str);
+    }
+
+    public T GetResult()
+    {
+        return _result;
     }
 }

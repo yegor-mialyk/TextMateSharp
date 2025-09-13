@@ -1,24 +1,21 @@
-using System.Collections.Generic;
+namespace TextMateSharp.Internal.Types;
 
-namespace TextMateSharp.Internal.Types
+public interface IRawGrammar
 {
-    public interface IRawGrammar
-    {
-        IRawGrammar Clone();
-        IRawRepository GetRepository();
+    IRawGrammar Clone();
+    IRawRepository? GetRepository();
 
-        string GetScopeName();
+    string GetScopeName();
 
-        ICollection<IRawRule> GetPatterns();
+    ICollection<IRawRule>? GetPatterns();
 
-        Dictionary<string, IRawRule> GetInjections();
+    Dictionary<string, IRawRule> GetInjections();
 
-        string GetInjectionSelector();
+    string GetInjectionSelector();
 
-        ICollection<string> GetFileTypes();
+    ICollection<string> GetFileTypes();
 
-        string GetName();
+    string GetName();
 
-        string GetFirstLineMatch();
-    }
+    string GetFirstLineMatch();
 }

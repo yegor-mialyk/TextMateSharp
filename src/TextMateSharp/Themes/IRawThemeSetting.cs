@@ -1,11 +1,10 @@
-namespace TextMateSharp.Themes
+namespace TextMateSharp.Themes;
+
+public interface IRawThemeSetting
 {
-    public interface IRawThemeSetting
-    {
-        string GetName();
+    string? GetName();
 
-        object GetScope();
+    object? GetScope();
 
-        IThemeSetting GetSetting();
-    }
+    IThemeSetting? GetSetting();
 }

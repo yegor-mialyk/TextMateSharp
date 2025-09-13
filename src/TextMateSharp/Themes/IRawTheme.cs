@@ -1,13 +1,12 @@
-using System.Collections.Generic;
+namespace TextMateSharp.Themes;
 
-namespace TextMateSharp.Themes
+public interface IRawTheme
 {
-    public interface IRawTheme
-    {
-        string GetName();
-        string GetInclude();
-        ICollection<IRawThemeSetting> GetSettings();
-        ICollection<IRawThemeSetting> GetTokenColors();
-        ICollection<KeyValuePair<string,object>> GetGuiColors();
-    }
+    string? GetInclude();
+
+    ICollection<IRawThemeSetting>? GetSettings();
+
+    ICollection<IRawThemeSetting>? GetTokenColors();
+
+    ICollection<KeyValuePair<string, object>>? GetGuiColors();
 }

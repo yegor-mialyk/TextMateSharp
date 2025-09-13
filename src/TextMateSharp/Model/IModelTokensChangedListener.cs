@@ -1,7 +1,6 @@
-namespace TextMateSharp.Model
+namespace TextMateSharp.Model;
+
+public interface IModelTokensChangedListener
 {
-    public interface IModelTokensChangedListener
-    {
-        void ModelTokensChanged(ModelTokensChangedEvent e);
-    }
+    void ModelTokensChanged(ModelTokensChangedEvent e);
 }

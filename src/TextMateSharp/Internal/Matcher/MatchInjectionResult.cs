@@ -1,19 +1,17 @@
 ﻿using Onigwrap;
-
 using TextMateSharp.Internal.Rules;
 
-namespace TextMateSharp.Internal.Matcher
-{
-    internal class MatchInjectionsResult : MatchResult
-    {
-        public bool IsPriorityMatch { get; private set; }
+namespace TextMateSharp.Internal.Matcher;
 
-        internal MatchInjectionsResult(
-            IOnigCaptureIndex[] captureIndexes,
-            RuleId matchedRuleId,
-            bool isPriorityMatch) : base(captureIndexes, matchedRuleId)
-        {
-            IsPriorityMatch = isPriorityMatch;
-        }
+internal class MatchInjectionsResult : MatchResult
+{
+    internal MatchInjectionsResult(
+        IOnigCaptureIndex[] captureIndexes,
+        RuleId matchedRuleId,
+        bool isPriorityMatch) : base(captureIndexes, matchedRuleId)
+    {
+        IsPriorityMatch = isPriorityMatch;
     }
+
+    public bool IsPriorityMatch { get; private set; }
 }

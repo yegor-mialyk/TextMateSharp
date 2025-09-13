@@ -1,19 +1,17 @@
-namespace TextMateSharp.Internal.Types
+namespace TextMateSharp.Internal.Types;
+
+public interface IRawRepository
 {
-    public interface IRawRepository
-    {
-        // IRawRule GetRule(string name);
-        IRawRepository Merge(params IRawRepository[] sources);
+    // IRawRule GetRule(string name);
+    IRawRepository Merge(params IRawRepository[] sources);
 
-        IRawRule GetProp(string name);
+    IRawRule GetProp(string name);
 
-        IRawRule GetBase();
+    IRawRule GetBase();
 
-        IRawRule GetSelf();
+    IRawRule GetSelf();
 
-        void SetSelf(IRawRule raw);
+    void SetSelf(IRawRule raw);
 
-        void SetBase(IRawRule ruleBase);
-
-    }
+    void SetBase(IRawRule ruleBase);
 }

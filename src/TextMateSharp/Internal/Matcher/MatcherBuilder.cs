@@ -1,201 +1,187 @@
-using System;
-using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
-namespace TextMateSharp.Internal.Matcher
+namespace TextMateSharp.Internal.Matcher;
+
+public class MatcherBuilder<T>
 {
-    public class MatcherBuilder<T>
+    private readonly IMatchesName<T> _matchesName;
+    private readonly Tokenizer _tokenizer;
+    private string _token;
+    public List<MatcherWithPriority<T>> Results;
+
+    public MatcherBuilder(string expression, IMatchesName<T> matchesName)
     {
-        public List<MatcherWithPriority<T>> Results;
-        private Tokenizer _tokenizer;
-        private IMatchesName<T> _matchesName;
-        private string _token;
+        Results = new();
+        _tokenizer = new(expression);
+        _matchesName = matchesName;
 
-        public MatcherBuilder(string expression, IMatchesName<T> matchesName)
+        _token = _tokenizer.Next();
+        while (_token != null)
         {
-            this.Results = new List<MatcherWithPriority<T>>();
-            this._tokenizer = new Tokenizer(expression);
-            this._matchesName = matchesName;
-
-            this._token = _tokenizer.Next();
-            while (_token != null)
+            var priority = 0;
+            if (_token.Length == 2 && _token[1] == ':')
             {
-                int priority = 0;
-                if (_token.Length == 2 && _token[1] == ':')
+                switch (_token[0])
                 {
-                    switch (_token[0])
-                    {
-                        case 'R':
-                            priority = 1;
-                            break;
-                        case 'L':
-                            priority = -1;
-                            break;
-                    }
-                    _token = _tokenizer.Next();
+                    case 'R':
+                        priority = 1;
+                        break;
+                    case 'L':
+                        priority = -1;
+                        break;
                 }
-                Predicate<T> matcher = ParseConjunction();
-                if (matcher != null)
-                {
-                    Results.Add(new MatcherWithPriority<T>(matcher, priority));
-                }
-                if (!",".Equals(_token))
-                {
-                    break;
-                }
+
                 _token = _tokenizer.Next();
             }
-        }
 
-        private Predicate<T> ParseInnerExpression()
-        {
-            List<Predicate<T>> matchers = new List<Predicate<T>>();
-            Predicate<T> matcher = ParseConjunction();
-            while (matcher != null)
-            {
-                matchers.Add(matcher);
-                if ("|".Equals(_token) || ",".Equals(_token))
-                {
-                    do
-                    {
-                        _token = _tokenizer.Next();
-                    } while ("|".Equals(_token) || ",".Equals(_token)); // ignore subsequent
-                    // commas
-                }
-                else
-                {
-                    break;
-                }
-                matcher = ParseConjunction();
-            }
-            // some (or)
-            return matcherInput =>
-            {
-                foreach (Predicate<T> matcher1 in matchers)
-                {
-                    if (matcher1.Invoke(matcherInput))
-                    {
-                        return true;
-                    }
-                }
-                return false;
-            };
+            var matcher = ParseConjunction();
+            if (matcher != null)
+                Results.Add(new(matcher, priority));
+            if (!",".Equals(_token))
+                break;
+            _token = _tokenizer.Next();
         }
+    }
 
-        private Predicate<T> ParseConjunction()
+    private Predicate<T> ParseInnerExpression()
+    {
+        var matchers = new List<Predicate<T>>();
+        var matcher = ParseConjunction();
+        while (matcher != null)
         {
-            List<Predicate<T>> matchers = new List<Predicate<T>>();
-            Predicate<T> matcher = ParseOperand();
-            while (matcher != null)
-            {
-                matchers.Add(matcher);
-                matcher = ParseOperand();
-            }
-            // every (and)
-            return matcherInput =>
-            {
-                foreach (Predicate<T> matcher1 in matchers)
-                {
-                    if (!matcher1.Invoke(matcherInput))
-                    {
-                        return false;
-                    }
-                }
-                return true;
-            };
-        }
-
-        private Predicate<T> ParseOperand()
-        {
-            if ("-".Equals(_token))
-            {
-                _token = _tokenizer.Next();
-                Predicate<T> expressionToNegate = ParseOperand();
-                return matcherInput =>
-                {
-                    if (expressionToNegate == null)
-                    {
-                        return false;
-                    }
-                    return !expressionToNegate.Invoke(matcherInput);
-                };
-            }
-            if ("(".Equals(_token))
-            {
-                _token = _tokenizer.Next();
-                Predicate<T> expressionInParents = ParseInnerExpression();
-                if (")".Equals(_token))
-                {
-                    _token = _tokenizer.Next();
-                }
-                return expressionInParents;
-            }
-            if (IsIdentifier(_token))
-            {
-                ICollection<string> identifiers = new List<string>();
+            matchers.Add(matcher);
+            if ("|".Equals(_token) || ",".Equals(_token))
                 do
                 {
-                    identifiers.Add(_token);
                     _token = _tokenizer.Next();
-                } while (_token != null && IsIdentifier(_token));
-                return matcherInput => this._matchesName.Match(identifiers, matcherInput);
-            }
-            return null;
+                } while ("|".Equals(_token) || ",".Equals(_token)); // ignore subsequent
+            // commas
+            else
+                break;
+
+            matcher = ParseConjunction();
         }
 
-        private bool IsIdentifier(string token)
+        // some (or)
+        return matcherInput =>
         {
-            if (string.IsNullOrEmpty(token))
-                return false;
+            foreach (var matcher1 in matchers)
+                if (matcher1.Invoke(matcherInput))
+                    return true;
 
-            /* Aprox. 2-3 times faster than:
-             * static final Pattern IDENTIFIER_REGEXP = Pattern.compile("[\\w\\.:]+");
-             * IDENTIFIER_REGEXP.matcher(token).matches();
-             *
-             * Aprox. 10% faster than:
-             * token.chars().allMatch(ch -> ... )
-             */
-            for (int i = 0; i < token.Length; i++)
-            {
-                char ch = token[i];
-                if (ch == '.' || ch == ':' || ch == '_'
-                    || ch >= 'a' && ch <= 'z'
-                    || ch >= 'A' && ch <= 'Z'
-                    || ch >= '0' && ch <= '9')
-                    continue;
-                return false;
-            }
+            return false;
+        };
+    }
+
+    private Predicate<T> ParseConjunction()
+    {
+        var matchers = new List<Predicate<T>>();
+        var matcher = ParseOperand();
+        while (matcher != null)
+        {
+            matchers.Add(matcher);
+            matcher = ParseOperand();
+        }
+
+        // every (and)
+        return matcherInput =>
+        {
+            foreach (var matcher1 in matchers)
+                if (!matcher1.Invoke(matcherInput))
+                    return false;
+
             return true;
+        };
+    }
+
+    private Predicate<T> ParseOperand()
+    {
+        if ("-".Equals(_token))
+        {
+            _token = _tokenizer.Next();
+            var expressionToNegate = ParseOperand();
+            return matcherInput =>
+            {
+                if (expressionToNegate == null)
+                    return false;
+                return !expressionToNegate.Invoke(matcherInput);
+            };
         }
 
-        class Tokenizer
+        if ("(".Equals(_token))
         {
+            _token = _tokenizer.Next();
+            var expressionInParents = ParseInnerExpression();
+            if (")".Equals(_token))
+                _token = _tokenizer.Next();
+            return expressionInParents;
+        }
 
-            private static Regex REGEXP = new Regex("([LR]:|[\\w\\.:][\\w\\.:\\-]*|[\\,\\|\\-\\(\\)])");
-            private string _input;
-            Match _currentMatch;
-
-            public Tokenizer(string input)
+        if (IsIdentifier(_token))
+        {
+            ICollection<string> identifiers = new List<string>();
+            do
             {
-                _input = input;
-            }
+                identifiers.Add(_token);
+                _token = _tokenizer.Next();
+            } while (_token != null && IsIdentifier(_token));
 
-            public string Next()
-            {
-                if (_currentMatch == null)
-                {
-                    _currentMatch = REGEXP.Match(_input);
-                }
-                else
-                {
-                    _currentMatch = _currentMatch.NextMatch();
-                }
+            return matcherInput => _matchesName.Match(identifiers, matcherInput);
+        }
 
-                if (_currentMatch.Success)
-                    return _currentMatch.Value;
+        return null;
+    }
 
-                return null;
-            }
+    private bool IsIdentifier(string token)
+    {
+        if (string.IsNullOrEmpty(token))
+            return false;
+
+        /* Aprox. 2-3 times faster than:
+         * static final Pattern IDENTIFIER_REGEXP = Pattern.compile("[\\w\\.:]+");
+         * IDENTIFIER_REGEXP.matcher(token).matches();
+         *
+         * Aprox. 10% faster than:
+         * token.chars().allMatch(ch -> ... )
+         */
+        for (var i = 0; i < token.Length; i++)
+        {
+            var ch = token[i];
+            if (ch == '.' ||
+                ch == ':' ||
+                ch == '_' ||
+                (ch >= 'a' && ch <= 'z') ||
+                (ch >= 'A' && ch <= 'Z') ||
+                (ch >= '0' && ch <= '9'))
+                continue;
+            return false;
+        }
+
+        return true;
+    }
+
+    private class Tokenizer
+    {
+        private static readonly Regex REGEXP = new("([LR]:|[\\w\\.:][\\w\\.:\\-]*|[\\,\\|\\-\\(\\)])");
+        private readonly string _input;
+        private Match _currentMatch;
+
+        public Tokenizer(string input)
+        {
+            _input = input;
+        }
+
+        public string Next()
+        {
+            if (_currentMatch == null)
+                _currentMatch = REGEXP.Match(_input);
+            else
+                _currentMatch = _currentMatch.NextMatch();
+
+            if (_currentMatch.Success)
+                return _currentMatch.Value;
+
+            return null;
         }
     }
 }
