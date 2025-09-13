@@ -12,17 +12,17 @@ public class RegExpSource
     private static readonly Regex BACK_REFERENCING_END = new("\\\\(\\d+)");
     private readonly bool _hasBackReferences;
 
-    private readonly RuleId _ruleId;
+    private readonly int _ruleId;
     private RegExpSourceAnchorCache _anchorCache;
     private bool _hasAnchor;
     private string _source;
 
-    public RegExpSource(string regExpSource, RuleId ruleId) :
+    public RegExpSource(string regExpSource, int ruleId) :
         this(regExpSource, ruleId, true)
     {
     }
 
-    public RegExpSource(string regExpSource, RuleId ruleId, bool handleAnchors)
+    public RegExpSource(string regExpSource, int ruleId, bool handleAnchors)
     {
         if (handleAnchors)
         {
@@ -275,7 +275,7 @@ public class RegExpSource
         return _source;
     }
 
-    public RuleId GetRuleId()
+    public int GetRuleId()
     {
         return _ruleId;
     }

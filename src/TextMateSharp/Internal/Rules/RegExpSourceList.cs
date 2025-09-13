@@ -7,14 +7,12 @@ public class RegExpSourceList
     private readonly RegExpSourceListAnchorCache _anchorCache;
 
     private readonly List<RegExpSource> _items;
-    private CompiledRule _cached;
+    private CompiledRule? _cached;
     private bool _hasAnchors;
 
     public RegExpSourceList()
     {
         _items = new();
-        _hasAnchors = false;
-        _cached = null;
         _anchorCache = new();
     }
 
@@ -51,7 +49,7 @@ public class RegExpSourceList
         }
     }
 
-    public CompiledRule Compile(bool allowA, bool allowG)
+    public CompiledRule? Compile(bool allowA, bool allowG)
     {
         if (!_hasAnchors)
         {
@@ -66,34 +64,23 @@ public class RegExpSourceList
             return _cached;
         }
 
-        if (_anchorCache.A0_G0 == null)
-            _anchorCache.A0_G0 = !allowA && !allowG
-                ? ResolveAnchors(allowA, allowG)
-                : null;
-        if (_anchorCache.A0_G1 == null)
-            _anchorCache.A0_G1 = !allowA && allowG
-                ? ResolveAnchors(allowA, allowG)
-                : null;
-        if (_anchorCache.A1_G0 == null)
-            _anchorCache.A1_G0 = allowA && !allowG
-                ? ResolveAnchors(allowA, allowG)
-                : null;
-        if (_anchorCache.A1_G1 == null)
-            _anchorCache.A1_G1 = allowA && allowG
-                ? ResolveAnchors(allowA, allowG)
-                : null;
+        _anchorCache.A0_G0 ??= !allowA && !allowG
+            ? ResolveAnchors(allowA, allowG)
+            : null;
+        _anchorCache.A0_G1 ??= !allowA && allowG
+            ? ResolveAnchors(allowA, allowG)
+            : null;
+        _anchorCache.A1_G0 ??= allowA && !allowG
+            ? ResolveAnchors(allowA, allowG)
+            : null;
+        _anchorCache.A1_G1 ??= allowA && allowG
+            ? ResolveAnchors(allowA, allowG)
+            : null;
+
         if (allowA)
-        {
-            if (allowG)
-                return _anchorCache.A1_G1;
+            return allowG ? _anchorCache.A1_G1 : _anchorCache.A1_G0;
 
-            return _anchorCache.A1_G0;
-        }
-
-        if (allowG)
-            return _anchorCache.A0_G1;
-
-        return _anchorCache.A0_G0;
+        return allowG ? _anchorCache.A0_G1 : _anchorCache.A0_G0;
     }
 
     private CompiledRule ResolveAnchors(bool allowA, bool allowG)
@@ -104,14 +91,14 @@ public class RegExpSourceList
         return new(CreateOnigScanner(regexps.ToArray()), GetRules());
     }
 
-    private OnigScanner CreateOnigScanner(string[] regexps)
+    private static OnigScanner CreateOnigScanner(string[] regexps)
     {
         return new(regexps);
     }
 
-    private IList<RuleId> GetRules()
+    private IList<int> GetRules()
     {
-        var ruleIds = new List<RuleId>();
+        var ruleIds = new List<int>();
         foreach (var item in _items)
             ruleIds.Add(item.GetRuleId());
         return ruleIds.ToArray();
@@ -119,9 +106,9 @@ public class RegExpSourceList
 
     private class RegExpSourceListAnchorCache
     {
-        public CompiledRule A0_G0;
-        public CompiledRule A0_G1;
-        public CompiledRule A1_G0;
-        public CompiledRule A1_G1;
+        public CompiledRule? A0_G0;
+        public CompiledRule? A0_G1;
+        public CompiledRule? A1_G0;
+        public CompiledRule? A1_G1;
     }
 }

@@ -248,7 +248,7 @@ internal class LineTokenizer
         }
     }
 
-    private MatchResult MatchRule(Grammar grammar, string lineText, in bool isFirstLine, in int linePos,
+    private MatchResult? MatchRule(Grammar grammar, string lineText, in bool isFirstLine, in int linePos,
         StateStack stack, in int anchorPosition)
     {
         var rule = stack.GetRule(grammar);
@@ -304,13 +304,13 @@ internal class LineTokenizer
         return matchResult;
     }
 
-    private MatchInjectionsResult MatchInjections(List<Injection> injections, Grammar grammar, string lineText,
+    private MatchInjectionsResult? MatchInjections(List<Injection> injections, Grammar grammar, string lineText,
         bool isFirstLine, in int linePos, StateStack stack, in int anchorPosition)
     {
         // The lower the better
         var bestMatchRating = int.MaxValue;
         IOnigCaptureIndex[] bestMatchCaptureIndices = null;
-        RuleId bestMatchRuleId = null;
+        var bestMatchRuleId = RuleId.NO_INIT;
         var bestMatchResultPriority = 0;
 
         var scopes = stack.ContentNameScopesList.GetScopeNames();
@@ -477,7 +477,7 @@ internal class LineTokenizer
             if (r != null)
             {
                 var matchedRuleId = ruleScanner.Rules[r.GetIndex()];
-                if (RuleId.WHILE_RULE.NotEquals(matchedRuleId))
+                if (RuleId.WHILE_RULE != matchedRuleId)
                 {
                     // we shouldn't end up here
                     stack = whileRule.Stack.Pop();

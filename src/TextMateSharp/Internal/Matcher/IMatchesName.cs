@@ -2,14 +2,14 @@ using TextMateSharp.Internal.Utils;
 
 namespace TextMateSharp.Internal.Matcher;
 
-public interface IMatchesName<T>
+public interface IMatchesName<in T>
 {
     bool Match(ICollection<string> names, T scopes);
 }
 
 public class NameMatcher : IMatchesName<List<string>>
 {
-    public static IMatchesName<List<string>> Default = new NameMatcher();
+    public static readonly IMatchesName<List<string>> Default = new NameMatcher();
 
     public bool Match(ICollection<string> identifers, List<string> scopes)
     {
@@ -30,7 +30,7 @@ public class NameMatcher : IMatchesName<List<string>>
         });
     }
 
-    private bool ScopesAreMatching(string thisScopeName, string scopeName)
+    private static bool ScopesAreMatching(string? thisScopeName, string scopeName)
     {
         if (thisScopeName == null)
             return false;

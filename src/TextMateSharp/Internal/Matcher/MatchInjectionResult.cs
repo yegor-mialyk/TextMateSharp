@@ -7,7 +7,7 @@ internal class MatchInjectionsResult : MatchResult
 {
     internal MatchInjectionsResult(
         IOnigCaptureIndex[] captureIndexes,
-        RuleId matchedRuleId,
+        int matchedRuleId,
         bool isPriorityMatch) : base(captureIndexes, matchedRuleId)
     {
         IsPriorityMatch = isPriorityMatch;

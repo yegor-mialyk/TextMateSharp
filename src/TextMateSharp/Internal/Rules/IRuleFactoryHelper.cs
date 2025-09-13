@@ -1,5 +1,3 @@
 namespace TextMateSharp.Internal.Rules;
 
-public interface IRuleFactoryHelper : IRuleRegistry, IGrammarRegistry
-{
-}
+public interface IRuleFactoryHelper : IRuleRegistry, IGrammarRegistry;

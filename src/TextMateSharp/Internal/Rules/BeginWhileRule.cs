@@ -6,10 +6,10 @@ public class BeginWhileRule : Rule
 {
     private readonly RegExpSource _begin;
     private readonly RegExpSource _while;
-    private RegExpSourceList _cachedCompiledPatterns;
-    private RegExpSourceList _cachedCompiledWhilePatterns;
+    private RegExpSourceList? _cachedCompiledPatterns;
+    private RegExpSourceList? _cachedCompiledWhilePatterns;
 
-    public BeginWhileRule(RuleId id, string name, string contentName, string begin,
+    public BeginWhileRule(int id, string name, string contentName, string begin,
         List<CaptureRule> beginCaptures, string whileStr, List<CaptureRule> whileCaptures,
         CompilePatternsResult patterns) : base(id, name, contentName)
     {
@@ -30,7 +30,7 @@ public class BeginWhileRule : Rule
     public List<CaptureRule> WhileCaptures { get; private set; }
     public bool WhileHasBackReferences { get; private set; }
     public bool HasMissingPatterns { get; private set; }
-    public IList<RuleId> Patterns { get; }
+    public IList<int> Patterns { get; }
 
     public string getWhileWithResolvedBackReferences(string lineText, IOnigCaptureIndex[] captureIndices)
     {
@@ -41,10 +41,9 @@ public class BeginWhileRule : Rule
     {
         if (isFirst)
         {
-            Rule rule;
             foreach (var pattern in Patterns)
             {
-                rule = grammar.GetRule(pattern);
+                var rule = grammar.GetRule(pattern);
                 rule.CollectPatternsRecursive(grammar, sourceList, false);
             }
         }
@@ -54,27 +53,27 @@ public class BeginWhileRule : Rule
         }
     }
 
-    public override CompiledRule Compile(IRuleRegistry grammar, string endRegexSource, bool allowA, bool allowG)
+    public override CompiledRule? Compile(IRuleRegistry grammar, string endRegexSource, bool allowA, bool allowG)
     {
         Precompile(grammar);
-        return _cachedCompiledPatterns.Compile(allowA, allowG);
+        return _cachedCompiledPatterns?.Compile(allowA, allowG);
     }
 
     private void Precompile(IRuleRegistry grammar)
     {
-        if (_cachedCompiledPatterns == null)
-        {
-            _cachedCompiledPatterns = new();
-            CollectPatternsRecursive(grammar, _cachedCompiledPatterns, true);
-        }
+        if (_cachedCompiledPatterns != null)
+            return;
+
+        _cachedCompiledPatterns = new();
+        CollectPatternsRecursive(grammar, _cachedCompiledPatterns, true);
     }
 
-    public CompiledRule CompileWhile(string endRegexSource, bool allowA, bool allowG)
+    public CompiledRule? CompileWhile(string endRegexSource, bool allowA, bool allowG)
     {
         PrecompileWhile();
         if (_while.HasBackReferences())
-            _cachedCompiledWhilePatterns.SetSource(0, endRegexSource);
-        return _cachedCompiledWhilePatterns.Compile(allowA, allowG);
+            _cachedCompiledWhilePatterns?.SetSource(0, endRegexSource);
+        return _cachedCompiledWhilePatterns?.Compile(allowA, allowG);
     }
 
     private void PrecompileWhile()

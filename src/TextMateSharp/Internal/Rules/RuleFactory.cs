@@ -6,19 +6,19 @@ namespace TextMateSharp.Internal.Rules;
 public class RuleFactory
 {
     public static CaptureRule CreateCaptureRule(IRuleFactoryHelper helper, string name, string contentName,
-        RuleId retokenizeCapturedWithRuleId)
+        int retokenizeCapturedWithRuleId)
     {
         return (CaptureRule) helper.RegisterRule(id =>
             new CaptureRule(id, name, contentName, retokenizeCapturedWithRuleId));
     }
 
-    public static RuleId GetCompiledRuleId(IRawRule desc, IRuleFactoryHelper helper,
+    public static int GetCompiledRuleId(IRawRule desc, IRuleFactoryHelper helper,
         IRawRepository repository)
     {
         if (desc == null)
-            return null;
+            return RuleId.NO_INIT;
 
-        if (desc.GetId() == null)
+        if (desc.GetId() == RuleId.NO_INIT)
             helper.RegisterRule(id =>
             {
                 desc.SetId(id);
@@ -91,7 +91,7 @@ public class RuleFactory
             foreach (var captureId in captures)
             {
                 numericCaptureId = ParseInt(captureId);
-                RuleId retokenizeCapturedWithRuleId = null;
+                var retokenizeCapturedWithRuleId = RuleId.NO_INIT;
                 var rule = captures.GetCapture(captureId);
                 if (rule.GetPatterns() != null)
                     retokenizeCapturedWithRuleId = GetCompiledRuleId(captures.GetCapture(captureId), helper,
@@ -115,8 +115,8 @@ public class RuleFactory
     private static CompilePatternsResult CompilePatterns(ICollection<IRawRule> patterns, IRuleFactoryHelper helper,
         IRawRepository repository)
     {
-        var r = new List<RuleId>();
-        RuleId patternId;
+        var r = new List<int>();
+        int patternId;
         IRawGrammar externalGrammar;
         Rule rule;
         bool skipRule;
@@ -124,7 +124,7 @@ public class RuleFactory
         if (patterns != null)
             foreach (var pattern in patterns)
             {
-                patternId = null;
+                patternId = RuleId.NO_INIT;
 
                 if (pattern.GetInclude() != null)
                 {

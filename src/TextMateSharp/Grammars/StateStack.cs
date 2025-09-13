@@ -6,7 +6,7 @@ namespace TextMateSharp.Grammars;
 public interface IStateStack
 {
     int Depth { get; }
-    RuleId RuleId { get; }
+    int RuleId { get; }
     string EndRule { get; }
 }
 
@@ -14,7 +14,7 @@ public class StateStack : IStateStack
 {
     public static StateStack NULL = new(
         null,
-        RuleId.NO_RULE,
+        Internal.Rules.RuleId.NO_RULE,
         0,
         0,
         false,
@@ -28,7 +28,7 @@ public class StateStack : IStateStack
 
     public StateStack(
         StateStack parent,
-        RuleId ruleId,
+        int ruleId,
         int enterPos,
         int anchorPos,
         bool beginRuleCapturedEOL,
@@ -53,7 +53,7 @@ public class StateStack : IStateStack
     public AttributedScopeStack ContentNameScopesList { get; }
     public bool BeginRuleCapturedEOL { get; }
     public int Depth { get; }
-    public RuleId RuleId { get; }
+    public int RuleId { get; }
     public string EndRule { get; }
 
     private static bool StructuralEquals(StateStack a, StateStack b)
@@ -113,7 +113,7 @@ public class StateStack : IStateStack
     }
 
     public StateStack Push(
-        RuleId ruleId,
+        int ruleId,
         int enterPos,
         int anchorPos,
         bool beginRuleCapturedEOL,

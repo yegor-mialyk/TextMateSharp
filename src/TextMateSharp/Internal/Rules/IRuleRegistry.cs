@@ -2,7 +2,7 @@ namespace TextMateSharp.Internal.Rules;
 
 public interface IRuleRegistry
 {
-    Rule GetRule(RuleId patternId);
+    Rule GetRule(int patternId);
 
-    Rule RegisterRule(Func<RuleId, Rule> factory);
+    Rule RegisterRule(Func<int, Rule> factory);
 }

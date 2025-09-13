@@ -10,6 +10,6 @@ public class PListGrammar : PListObject
 
     protected override Dictionary<string, object> CreateRaw()
     {
-        return new Raw();
+        return new GrammarRaw();
     }
 }

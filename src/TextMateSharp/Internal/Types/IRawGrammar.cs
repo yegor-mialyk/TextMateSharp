@@ -5,17 +5,17 @@ public interface IRawGrammar
     IRawGrammar Clone();
     IRawRepository? GetRepository();
 
-    string GetScopeName();
+    string? GetScopeName();
 
     ICollection<IRawRule>? GetPatterns();
 
-    Dictionary<string, IRawRule> GetInjections();
+    Dictionary<string, IRawRule>? GetInjections();
 
     string GetInjectionSelector();
 
     ICollection<string> GetFileTypes();
 
-    string GetName();
+    string? GetName();
 
-    string GetFirstLineMatch();
+    string? GetFirstLineMatch();
 }

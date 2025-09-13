@@ -12,7 +12,7 @@ public abstract class Rule
 
     private readonly bool _nameIsCapturing;
 
-    public Rule(RuleId id, string name, string contentName)
+    public Rule(int id, string name, string contentName)
     {
         Id = id;
 
@@ -22,7 +22,7 @@ public abstract class Rule
         _contentNameIsCapturing = RegexSource.HasCaptures(_contentName);
     }
 
-    public RuleId Id { get; private set; }
+    public int Id { get; private set; }
 
     public string GetName(string lineText, IOnigCaptureIndex[] captureIndices)
     {
@@ -41,5 +41,5 @@ public abstract class Rule
 
     public abstract void CollectPatternsRecursive(IRuleRegistry grammar, RegExpSourceList sourceList, bool isFirst);
 
-    public abstract CompiledRule Compile(IRuleRegistry grammar, string endRegexSource, bool allowA, bool allowG);
+    public abstract CompiledRule? Compile(IRuleRegistry grammar, string endRegexSource, bool allowA, bool allowG);
 }

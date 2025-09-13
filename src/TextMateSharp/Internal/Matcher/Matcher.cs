@@ -4,12 +4,6 @@ internal class Matcher
 {
     internal static ICollection<MatcherWithPriority<List<string>>> CreateMatchers(string selector)
     {
-        return CreateMatchers(selector, NameMatcher.Default);
-    }
-
-    public static List<MatcherWithPriority<List<string>>> CreateMatchers(
-        string selector, IMatchesName<List<string>> matchesName)
-    {
-        return new MatcherBuilder<List<string>>(selector, matchesName).Results;
+        return new MatcherBuilder<List<string>>(selector, NameMatcher.Default).Results;
     }
 }

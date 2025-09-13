@@ -14,12 +14,12 @@ public class Grammar : IGrammar, IRuleFactoryHelper
     private readonly Dictionary<string, IRawGrammar> _includedGrammars;
     private readonly IRawGrammar _rawGrammar;
     private readonly string _rootScopeName;
-    private readonly Dictionary<RuleId, Rule> _ruleId2desc;
+    private readonly Dictionary<int, Rule> _ruleId2desc;
     private readonly List<TokenTypeMatcher> _tokenTypeMatchers;
     private List<Injection> _injections;
     private volatile bool _isCompiling;
     private int _lastRuleId;
-    private RuleId _rootId;
+    private int _rootId;
 
     public Grammar(
         string scopeName,
@@ -34,8 +34,7 @@ public class Grammar : IGrammar, IRuleFactoryHelper
         _rootScopeName = scopeName;
         _basicScopeAttributesProvider = new(initialLanguage, themeProvider, embeddedLanguages);
         _balancedBracketSelectors = balancedBracketSelectors;
-        _rootId = null;
-        _lastRuleId = 0;
+        _rootId = RuleId.NO_INIT;
         _includedGrammars = new();
         _grammarRepository = grammarRepository;
         _rawGrammar = InitGrammar(grammar, null);
@@ -51,7 +50,7 @@ public class Grammar : IGrammar, IRuleFactoryHelper
         return TokenizeLine(lineText, null, TimeSpan.MaxValue);
     }
 
-    public ITokenizeLineResult TokenizeLine(string lineText, IStateStack prevState, TimeSpan timeLimit)
+    public ITokenizeLineResult TokenizeLine(string lineText, IStateStack? prevState, TimeSpan timeLimit)
     {
         return (ITokenizeLineResult) Tokenize(lineText, (StateStack) prevState, false, timeLimit);
     }
@@ -81,15 +80,15 @@ public class Grammar : IGrammar, IRuleFactoryHelper
         return _rawGrammar.GetFileTypes();
     }
 
-    public Rule RegisterRule(Func<RuleId, Rule> factory)
+    public Rule RegisterRule(Func<int, Rule> factory)
     {
-        var id = RuleId.Of(++_lastRuleId);
+        var id = ++_lastRuleId;
         var result = factory(id);
         _ruleId2desc[id] = result;
         return result;
     }
 
-    public Rule GetRule(RuleId patternId)
+    public Rule GetRule(int patternId)
     {
         Rule result;
         _ruleId2desc.TryGetValue(patternId, out result);
@@ -197,8 +196,8 @@ public class Grammar : IGrammar, IRuleFactoryHelper
     {
         grammar = grammar.Clone();
         if (grammar.GetRepository() == null)
-            ((Raw) grammar).SetRepository(new Raw());
-        var self = new Raw();
+            ((GrammarRaw) grammar).SetRepository(new GrammarRaw());
+        var self = new GrammarRaw();
         self.SetPatterns(grammar.GetPatterns());
         self.SetName(grammar.GetScopeName());
         grammar.GetRepository().SetSelf(self);
@@ -211,12 +210,12 @@ public class Grammar : IGrammar, IRuleFactoryHelper
 
     private IRawGrammar Clone(IRawGrammar grammar)
     {
-        return (IRawGrammar) ((Raw) grammar).Clone();
+        return (IRawGrammar) ((GrammarRaw) grammar).Clone();
     }
 
-    private object Tokenize(string lineText, StateStack prevState, bool emitBinaryTokens, TimeSpan timeLimit)
+    private object Tokenize(string lineText, StateStack? prevState, bool emitBinaryTokens, TimeSpan timeLimit)
     {
-        if (_rootId == null)
+        if (_rootId == RuleId.NO_INIT)
             GenerateRootId();
 
         bool isFirstLine;

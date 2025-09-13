@@ -186,7 +186,7 @@ public class GrammarRepository : IGrammarRepository, IThemeProvider
         ISet<string> result,
         IRawRepository repository)
     {
-        if (repository is not Raw rawRepository)
+        if (repository is not GrammarRaw rawRepository)
             return;
 
         foreach (var key in rawRepository.Keys)

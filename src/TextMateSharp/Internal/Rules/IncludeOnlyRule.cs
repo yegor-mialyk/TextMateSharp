@@ -2,9 +2,9 @@ namespace TextMateSharp.Internal.Rules;
 
 public class IncludeOnlyRule : Rule
 {
-    private RegExpSourceList _cachedCompiledPatterns;
+    private RegExpSourceList? _cachedCompiledPatterns;
 
-    public IncludeOnlyRule(RuleId id, string name, string contentName, CompilePatternsResult patterns) : base(id, name,
+    public IncludeOnlyRule(int id, string name, string contentName, CompilePatternsResult patterns) : base(id, name,
         contentName)
     {
         Patterns = patterns.Patterns;
@@ -14,7 +14,7 @@ public class IncludeOnlyRule : Rule
     }
 
     public bool HasMissingPatterns { get; private set; }
-    public IList<RuleId> Patterns { get; }
+    public IList<int> Patterns { get; }
 
     public override void CollectPatternsRecursive(IRuleRegistry grammar, RegExpSourceList sourceList, bool isFirst)
     {

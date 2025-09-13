@@ -6,9 +6,9 @@ public class BeginEndRule : Rule
 {
     private readonly RegExpSource _begin;
     private readonly RegExpSource _end;
-    private RegExpSourceList _cachedCompiledPatterns;
+    private RegExpSourceList? _cachedCompiledPatterns;
 
-    public BeginEndRule(RuleId id, string name, string contentName, string begin, List<CaptureRule> beginCaptures,
+    public BeginEndRule(int id, string name, string contentName, string begin, List<CaptureRule> beginCaptures,
         string end, List<CaptureRule> endCaptures, bool applyEndPatternLast, CompilePatternsResult patterns)
         : base(id, name, contentName)
     {
@@ -30,7 +30,7 @@ public class BeginEndRule : Rule
     public List<CaptureRule> EndCaptures { get; private set; }
     public bool ApplyEndPatternLast { get; }
     public bool HasMissingPatterns { get; private set; }
-    public IList<RuleId> Patterns { get; }
+    public IList<int> Patterns { get; }
 
     public string GetEndWithResolvedBackReferences(string lineText, IOnigCaptureIndex[] captureIndices)
     {

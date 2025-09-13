@@ -1,13 +1,8 @@
 namespace TextMateSharp.Internal.Matcher;
 
-public class MatcherWithPriority<T>
+public class MatcherWithPriority<T>(Predicate<T> matcher, int priority)
 {
-    public MatcherWithPriority(Predicate<T> matcher, int priority)
-    {
-        Matcher = matcher;
-        Priority = priority;
-    }
+    public Predicate<T> Matcher { get; private set; } = matcher;
 
-    public Predicate<T> Matcher { get; private set; }
-    public int Priority { get; private set; }
+    public int Priority { get; private set; } = priority;
 }

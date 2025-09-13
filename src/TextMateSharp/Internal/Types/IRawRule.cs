@@ -1,40 +1,38 @@
-using TextMateSharp.Internal.Rules;
-
 namespace TextMateSharp.Internal.Types;
 
 public interface IRawRule
 {
-    RuleId GetId();
+    int GetId();
 
-    void SetId(RuleId id);
+    void SetId(int id);
 
     string? GetInclude();
 
     void SetInclude(string include);
 
-    string GetName();
+    string? GetName();
 
     void SetName(string name);
 
-    string GetContentName();
+    string? GetContentName();
 
-    string GetMatch();
+    string? GetMatch();
 
-    IRawCaptures GetCaptures();
+    IRawCaptures? GetCaptures();
 
-    string GetBegin();
+    string? GetBegin();
 
-    IRawCaptures GetBeginCaptures();
+    IRawCaptures? GetBeginCaptures();
 
     void SetBeginCaptures(IRawCaptures beginCaptures);
 
-    string GetEnd();
+    string? GetEnd();
 
-    string GetWhile();
+    string? GetWhile();
 
-    IRawCaptures GetEndCaptures();
+    IRawCaptures? GetEndCaptures();
 
-    IRawCaptures GetWhileCaptures();
+    IRawCaptures? GetWhileCaptures();
 
     ICollection<IRawRule>? GetPatterns();
 
