@@ -61,9 +61,7 @@ public static class EncodedTokenAttributes
     {
         languageId = languageId == 0 ? GetLanguageId(metadata) : languageId;
         tokenType = tokenType == StandardTokenType.NotSet ? GetTokenType(metadata) : tokenType;
-        var containsBalancedBracketsBit = (containsBalancedBrackets == null
-            ? ContainsBalancedBrackets(metadata)
-            : containsBalancedBrackets.Value)
+        var containsBalancedBracketsBit = containsBalancedBrackets ?? ContainsBalancedBrackets(metadata)
             ? 1
             : 0;
         fontStyle = fontStyle == FontStyle.NotSet ? GetFontStyle(metadata) : fontStyle;

@@ -2,7 +2,7 @@ namespace TextMateSharp.Internal.Rules;
 
 public class CaptureRule : Rule
 {
-    public CaptureRule(int id, string name, string contentName, int retokenizeCapturedWithRuleId)
+    public CaptureRule(int id, string? name, string? contentName, int retokenizeCapturedWithRuleId)
         : base(id, name, contentName)
     {
         RetokenizeCapturedWithRuleId = retokenizeCapturedWithRuleId;

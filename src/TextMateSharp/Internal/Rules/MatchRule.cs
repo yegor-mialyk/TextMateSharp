@@ -5,7 +5,7 @@ public class MatchRule : Rule
     private readonly RegExpSource _match;
     private RegExpSourceList? _cachedCompiledPatterns;
 
-    public MatchRule(int id, string name, string match, List<CaptureRule> captures) : base(id, name, null)
+    public MatchRule(int id, string? name, string? match, List<CaptureRule?> captures) : base(id, name, null)
     {
         _match = new(match, Id);
         Captures = captures;

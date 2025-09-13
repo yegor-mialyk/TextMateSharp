@@ -11,21 +11,21 @@ public class BasicScopeAttributesProvider
     private static readonly Regex STANDARD_TOKEN_TYPE_REGEXP = new("\\b(comment|string|regex|meta\\.embedded)\\b");
     private readonly Dictionary<string, BasicScopeAttributes> _cache = new();
     private readonly Dictionary<string, int> _embeddedLanguages;
-    private readonly Regex _embeddedLanguagesRegex;
+    private readonly Regex? _embeddedLanguagesRegex;
 
     private readonly int _initialLanguage;
     private readonly IThemeProvider _themeProvider;
     private BasicScopeAttributes _defaultAttributes;
 
     public BasicScopeAttributesProvider(int initialLanguage, IThemeProvider themeProvider,
-        Dictionary<string, int> embeddedLanguages)
+        Dictionary<string, int>? embeddedLanguages)
     {
         _initialLanguage = initialLanguage;
         _themeProvider = themeProvider;
         _defaultAttributes = new(
             _initialLanguage,
             StandardTokenType.NotSet,
-            new() { _themeProvider.GetDefaults() });
+            [_themeProvider.GetDefaults()]);
 
         // embeddedLanguages handling
         _embeddedLanguages = new();
@@ -38,7 +38,7 @@ public class BasicScopeAttributesProvider
             }
 
         // create the regex
-        var escapedScopes = _embeddedLanguages.Keys.Select(s => RegexSource.EscapeRegExpCharacters(s)).ToList();
+        var escapedScopes = _embeddedLanguages.Keys.Select(RegexSource.EscapeRegExpCharacters).ToList();
 
         if (escapedScopes.Count == 0)
         {
@@ -47,9 +47,10 @@ public class BasicScopeAttributesProvider
         }
         else
         {
-            var reversedScopes = new List<string>(escapedScopes);
+            // TODO: !!! reversedScopes?
+            /*var reversedScopes = new List<string>(escapedScopes);
             reversedScopes.Sort();
-            reversedScopes.Reverse();
+            reversedScopes.Reverse();*/
             _embeddedLanguagesRegex = new(
                 "^((" +
                 string.Join(")|(", escapedScopes) +
@@ -71,12 +72,11 @@ public class BasicScopeAttributesProvider
         return _defaultAttributes;
     }
 
-    public BasicScopeAttributes GetBasicScopeAttributes(string scopeName)
+    public BasicScopeAttributes GetBasicScopeAttributes(string? scopeName)
     {
         if (scopeName == null)
             return _NULL_SCOPE_METADATA;
-        BasicScopeAttributes value;
-        _cache.TryGetValue(scopeName, out value);
+        _cache.TryGetValue(scopeName, out var value);
         if (value != null)
             return value;
         value = DoGetMetadataForScope(scopeName);
@@ -88,15 +88,16 @@ public class BasicScopeAttributesProvider
     {
         var languageId = ScopeToLanguage(scopeName);
         var standardTokenType = ToStandardTokenType(scopeName);
-        var themeData = _themeProvider.ThemeMatch(new[] { scopeName });
+        var themeData = _themeProvider.ThemeMatch([scopeName]);
 
         return new(languageId, standardTokenType, themeData);
     }
 
-    private int ScopeToLanguage(string scope)
+    private int ScopeToLanguage(string? scope)
     {
         if (scope == null)
             return 0;
+
         if (_embeddedLanguagesRegex == null)
             // no scopes registered
             return 0;
@@ -107,7 +108,7 @@ public class BasicScopeAttributesProvider
             return 0;
 
         var scopeName = m.Groups[1].Value;
-        return _embeddedLanguages.TryGetValue(scopeName, out var value) ? value : 0;
+        return _embeddedLanguages.GetValueOrDefault(scopeName);
     }
 
     private static int ToStandardTokenType(string tokenType)

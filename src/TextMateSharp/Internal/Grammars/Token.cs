@@ -1,4 +1,3 @@
-using System.Text;
 using TextMateSharp.Grammars;
 
 namespace TextMateSharp.Internal.Grammars;
@@ -19,17 +18,4 @@ internal class Token : IToken
     public int Length => EndIndex - StartIndex;
 
     public List<string> Scopes { get; }
-
-    public override string ToString()
-    {
-        var s = new StringBuilder();
-        s.Append("{startIndex: ");
-        s.Append(StartIndex);
-        s.Append(", endIndex: ");
-        s.Append(EndIndex);
-        s.Append(", scopes: ");
-        s.Append(string.Join(", ", Scopes));
-        s.Append('}');
-        return s.ToString();
-    }
 }

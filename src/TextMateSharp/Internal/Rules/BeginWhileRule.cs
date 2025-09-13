@@ -9,12 +9,12 @@ public class BeginWhileRule : Rule
     private RegExpSourceList? _cachedCompiledPatterns;
     private RegExpSourceList? _cachedCompiledWhilePatterns;
 
-    public BeginWhileRule(int id, string name, string contentName, string begin,
+    public BeginWhileRule(int id, string? name, string? contentName, string? begin,
         List<CaptureRule> beginCaptures, string whileStr, List<CaptureRule> whileCaptures,
         CompilePatternsResult patterns) : base(id, name, contentName)
     {
         _begin = new(begin, Id);
-        _while = new(whileStr, RuleId.WHILE_RULE);
+        _while = new(whileStr, WHILE_RULE);
 
         BeginCaptures = beginCaptures;
         WhileCaptures = whileCaptures;
@@ -26,10 +26,10 @@ public class BeginWhileRule : Rule
         _cachedCompiledWhilePatterns = null;
     }
 
-    public List<CaptureRule> BeginCaptures { get; private set; }
-    public List<CaptureRule> WhileCaptures { get; private set; }
-    public bool WhileHasBackReferences { get; private set; }
-    public bool HasMissingPatterns { get; private set; }
+    public List<CaptureRule> BeginCaptures { get; }
+    public List<CaptureRule> WhileCaptures { get; }
+    public bool WhileHasBackReferences { get; }
+    public bool HasMissingPatterns { get; }
     public IList<int> Patterns { get; }
 
     public string getWhileWithResolvedBackReferences(string lineText, IOnigCaptureIndex[] captureIndices)
@@ -44,7 +44,7 @@ public class BeginWhileRule : Rule
             foreach (var pattern in Patterns)
             {
                 var rule = grammar.GetRule(pattern);
-                rule.CollectPatternsRecursive(grammar, sourceList, false);
+                rule?.CollectPatternsRecursive(grammar, sourceList, false);
             }
         }
         else

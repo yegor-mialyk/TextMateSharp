@@ -8,12 +8,12 @@ public class BeginEndRule : Rule
     private readonly RegExpSource _end;
     private RegExpSourceList? _cachedCompiledPatterns;
 
-    public BeginEndRule(int id, string name, string contentName, string begin, List<CaptureRule> beginCaptures,
-        string end, List<CaptureRule> endCaptures, bool applyEndPatternLast, CompilePatternsResult patterns)
+    public BeginEndRule(int id, string? name, string? contentName, string? begin, List<CaptureRule?> beginCaptures,
+        string? end, List<CaptureRule?> endCaptures, bool applyEndPatternLast, CompilePatternsResult patterns)
         : base(id, name, contentName)
     {
         _begin = new(begin, Id);
-        _end = new(end, RuleId.END_RULE);
+        _end = new(end, END_RULE);
 
         BeginCaptures = beginCaptures;
         EndHasBackReferences = _end.HasBackReferences();
@@ -49,7 +49,7 @@ public class BeginEndRule : Rule
             sourceList.Push(_begin);
     }
 
-    public override CompiledRule Compile(IRuleRegistry grammar, string endRegexSource, bool allowA, bool allowG)
+    public override CompiledRule? Compile(IRuleRegistry grammar, string endRegexSource, bool allowA, bool allowG)
     {
         var precompiled = Precompile(grammar);
         if (_end.HasBackReferences())
@@ -60,7 +60,7 @@ public class BeginEndRule : Rule
                 precompiled.SetSource(0, endRegexSource);
         }
 
-        return _cachedCompiledPatterns.Compile(allowA, allowG);
+        return _cachedCompiledPatterns?.Compile(allowA, allowG);
     }
 
     private RegExpSourceList Precompile(IRuleRegistry grammar)

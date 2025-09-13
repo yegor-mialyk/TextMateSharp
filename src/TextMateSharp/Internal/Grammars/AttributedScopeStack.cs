@@ -4,21 +4,24 @@ namespace TextMateSharp.Internal.Grammars;
 
 public class AttributedScopeStack
 {
-    public AttributedScopeStack(AttributedScopeStack parent, string scopePath, int tokenAttributes)
+    public AttributedScopeStack(AttributedScopeStack? parent, string scopePath, int tokenAttributes)
     {
         Parent = parent;
         ScopePath = scopePath;
         TokenAttributes = tokenAttributes;
     }
 
-    public AttributedScopeStack Parent { get; }
+    public AttributedScopeStack? Parent { get; }
+
     public string ScopePath { get; }
+
     public int TokenAttributes { get; }
 
-    private static bool StructuralEquals(AttributedScopeStack a, AttributedScopeStack b)
+    private static bool StructuralEquals(AttributedScopeStack? a, AttributedScopeStack? b)
     {
         do
         {
+            // ReSharper disable once PossibleUnintendedReferenceComparison
             if (a == b)
                 return true;
 
@@ -39,26 +42,19 @@ public class AttributedScopeStack
         } while (true);
     }
 
-    private static bool Equals(AttributedScopeStack a, AttributedScopeStack b)
+    private static bool Equals(AttributedScopeStack? a, AttributedScopeStack? b)
     {
-        if (a == b)
-            return true;
-        if (a == null || b == null)
-            return false;
         return StructuralEquals(a, b);
     }
 
-    public override bool Equals(object other)
+    public override bool Equals(object? other)
     {
-        if (other == null || other is AttributedScopeStack)
-            return false;
-
-        return Equals(this, (AttributedScopeStack) other);
+        return other is not (null or AttributedScopeStack) && Equals(this, (AttributedScopeStack) other);
     }
 
     public override int GetHashCode()
     {
-        return Parent.GetHashCode() +
+        return (Parent?.GetHashCode() ?? 0) +
             ScopePath.GetHashCode() +
             TokenAttributes.GetHashCode();
     }
@@ -69,7 +65,7 @@ public class AttributedScopeStack
         return selector.Equals(scope) || scope.StartsWith(selectorWithDot);
     }
 
-    private static bool Matches(AttributedScopeStack target, List<string> parentScopes)
+    private static bool Matches(AttributedScopeStack? target, List<string>? parentScopes)
     {
         if (parentScopes == null)
             return true;
@@ -98,8 +94,8 @@ public class AttributedScopeStack
 
     public static int MergeAttributes(
         int existingTokenAttributes,
-        AttributedScopeStack scopesList,
-        BasicScopeAttributes basicScopeAttributes)
+        AttributedScopeStack? scopesList,
+        BasicScopeAttributes? basicScopeAttributes)
     {
         if (basicScopeAttributes == null)
             return existingTokenAttributes;
@@ -110,14 +106,14 @@ public class AttributedScopeStack
 
         if (basicScopeAttributes.ThemeData != null)
             // Find the first themeData that matches
-            foreach (var themeData in basicScopeAttributes.ThemeData)
-                if (Matches(scopesList, themeData.parentScopes))
-                {
-                    fontStyle = themeData.fontStyle;
-                    foreground = themeData.foreground;
-                    background = themeData.background;
-                    break;
-                }
+            foreach (var themeData in basicScopeAttributes.ThemeData
+                .Where(themeData => Matches(scopesList, themeData.ParentScopes)))
+            {
+                fontStyle = themeData.fontStyle;
+                foreground = themeData.foreground;
+                background = themeData.background;
+                break;
+            }
 
         return EncodedTokenAttributes.Set(
             existingTokenAttributes,
@@ -141,15 +137,15 @@ public class AttributedScopeStack
         return target;
     }
 
-    public AttributedScopeStack PushAtributed(string scopePath, Grammar grammar)
+    public AttributedScopeStack PushAttributed(string? scopePath, Grammar grammar)
     {
         if (scopePath == null)
             return this;
-        if (scopePath.IndexOf(' ') >= 0)
+        return scopePath.Contains(' ') ?
             // there are multiple scopes to push
-            return Push(this, grammar, new(scopePath.Split(new[] { " " }, StringSplitOptions.None)));
-        // there is a single scope to push
-        return Push(this, grammar, new() { scopePath });
+            Push(this, grammar, [..scopePath.Split(' ')]) :
+            // there is a single scope to push
+            Push(this, grammar, [scopePath]);
     }
 
     public List<string> GetScopeNames()
@@ -157,9 +153,10 @@ public class AttributedScopeStack
         return GenerateScopes(this);
     }
 
-    private static List<string> GenerateScopes(AttributedScopeStack scopesList)
+    private static List<string> GenerateScopes(AttributedScopeStack? scopesList)
     {
         var result = new List<string>();
+
         while (scopesList != null)
         {
             result.Add(scopesList.ScopePath);
@@ -167,6 +164,7 @@ public class AttributedScopeStack
         }
 
         result.Reverse();
+
         return result;
     }
 }

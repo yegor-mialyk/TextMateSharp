@@ -28,7 +28,7 @@ public class GrammarRepository : IGrammarRepository, IThemeProvider
         return result;
     }
 
-    public ICollection<string>? Injections(string targetScope)
+    public ICollection<string>? GetInjections(string targetScope)
     {
         _injectionGrammars.TryGetValue(targetScope, out var result);
         return result;
@@ -93,9 +93,8 @@ public class GrammarRepository : IGrammarRepository, IThemeProvider
 
                 var scopes = AddGrammar(loadedRawGrammar, injections);
 
-                foreach (var scope in scopes)
-                    if (seenScopeNames.Add(scope))
-                        remainingScopeNames.Enqueue(scope);
+                foreach (var scope in scopes.Where(scope => scope != null && seenScopeNames.Add(scope)))
+                    remainingScopeNames.Enqueue(scope!);
             }
             catch (Exception e)
             {
@@ -123,18 +122,23 @@ public class GrammarRepository : IGrammarRepository, IThemeProvider
         return value;
     }
 
-    public ICollection<string> AddGrammar(IRawGrammar grammar, ICollection<string>? injectionScopeNames)
+    public HashSet<string?> AddGrammar(IRawGrammar grammar, ICollection<string>? injectionScopeNames)
     {
-        _rawGrammars.Add(grammar.GetScopeName(), grammar);
+        var name = grammar.GetScopeName();
 
-        var includedScopes = new HashSet<string>();
+        if (name == null)
+            throw new TextMateException("Grammar is missing a scope name");
+
+        _rawGrammars.Add(name, grammar);
+
+        var includedScopes = new HashSet<string?>();
 
         CollectIncludedScopes(includedScopes, grammar);
 
         if (injectionScopeNames is null)
             return includedScopes;
 
-        _injectionGrammars.Add(grammar.GetScopeName(), injectionScopeNames);
+        _injectionGrammars.Add(name, injectionScopeNames);
 
         foreach (var scopeName in injectionScopeNames)
             includedScopes.Add(scopeName);
@@ -142,7 +146,7 @@ public class GrammarRepository : IGrammarRepository, IThemeProvider
         return includedScopes;
     }
 
-    private static void CollectIncludedScopes(ISet<string> result, IRawGrammar grammar)
+    private static void CollectIncludedScopes(HashSet<string?> result, IRawGrammar grammar)
     {
         var patterns = grammar.GetPatterns();
         if (patterns != null /* && Array.isArray(grammar.patterns) */)
@@ -156,7 +160,7 @@ public class GrammarRepository : IGrammarRepository, IThemeProvider
         result.Remove(grammar.GetScopeName());
     }
 
-    private static void ExtractIncludedScopesInPatterns(ISet<string> result, ICollection<IRawRule> patterns)
+    private static void ExtractIncludedScopesInPatterns(HashSet<string?> result, ICollection<IRawRule> patterns)
     {
         foreach (var pattern in patterns)
         {
@@ -183,7 +187,7 @@ public class GrammarRepository : IGrammarRepository, IThemeProvider
     }
 
     private static void ExtractIncludedScopesInRepository(
-        ISet<string> result,
+        HashSet<string?> result,
         IRawRepository repository)
     {
         if (repository is not GrammarRaw rawRepository)

@@ -6,5 +6,5 @@ public interface IGrammarRepository
 {
     IRawGrammar? Lookup(string scopeName);
 
-    ICollection<string>? Injections(string targetScope);
+    ICollection<string>? GetInjections(string targetScope);
 }

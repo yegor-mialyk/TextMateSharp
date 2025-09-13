@@ -37,7 +37,7 @@ public class Theme
             ParsedTheme.ParseInclude(source, registryOptions, 0, out var themeInclude),
             colorMap);
 
-        // First get colors from include, then try and overwrite with local colors..
+        // First get colors from include, then try and overwrite with local colors
         // I don't see this happening currently, but here just in case that ever happens.
         if (themeInclude != null)
             ParsedTheme.ParsedGuiColors(themeInclude, guiColorsDictionary);
@@ -74,7 +74,7 @@ public class Theme
         return _colorMap.GetId(color);
     }
 
-    public string GetColor(int id)
+    public string? GetColor(int id)
     {
         return _colorMap.GetColor(id);
     }
@@ -87,7 +87,7 @@ public class Theme
 
 internal class ParsedTheme
 {
-    private readonly Dictionary<string /* scopeName */, List<ThemeTrieElementRule>> _cachedMatchRoot;
+    private readonly Dictionary<string /* scopeName */, List<ThemeTrieElementRule>> _cachedMatchRoot = new();
     private readonly ThemeTrieElementRule _defaults;
     private readonly ThemeTrieElement _root;
 
@@ -95,7 +95,6 @@ internal class ParsedTheme
     {
         _root = root;
         _defaults = defaults;
-        _cachedMatchRoot = new();
     }
 
     internal static List<ParsedThemeRule> ParseTheme(IRawTheme source, int priority)
@@ -121,7 +120,6 @@ internal class ParsedTheme
         foreach (var kvp in colors)
             colorDictionary[kvp.Key] = (string) kvp.Value;
     }
-
 
     internal static List<ParsedThemeRule> ParseInclude(
         IRawTheme source,
@@ -168,9 +166,9 @@ internal class ParsedTheme
                 s = s.Trim(',');
                 scopes = new(s.Split(',', StringSplitOptions.RemoveEmptyEntries));
             }
-            else if (settingScope is IList<object>)
+            else if (settingScope is IList<object> list)
             {
-                scopes = new(((IList<object>) settingScope).Cast<string>());
+                scopes = new(list.Cast<string>());
             }
             else
             {
@@ -178,12 +176,12 @@ internal class ParsedTheme
             }
 
             var fontStyle = FontStyle.NotSet;
-            var settingsFontStyle = entry.GetSetting().GetFontStyle();
-            if (settingsFontStyle is string)
+            var settingsFontStyle = entry.GetSetting()?.GetFontStyle();
+            if (settingsFontStyle is string style)
             {
                 fontStyle = FontStyle.None;
 
-                var segments = ((string) settingsFontStyle).Split(' ');
+                var segments = style.Split(' ');
                 foreach (var segment in segments)
                     switch (segment)
                     {
@@ -203,22 +201,23 @@ internal class ParsedTheme
             }
 
             string? foreground = null;
-            object settingsForeground = entry.GetSetting().GetForeground();
-            if (settingsForeground is string && StringUtils.IsValidHexColor((string) settingsForeground))
-                foreground = (string) settingsForeground;
+            object? settingsForeground = entry.GetSetting()?.GetForeground();
+            if (settingsForeground is string foreground1 && StringUtils.IsValidHexColor(foreground1))
+                foreground = foreground1;
 
             string? background = null;
-            object settingsBackground = entry.GetSetting().GetBackground();
-            if (settingsBackground is string && StringUtils.IsValidHexColor((string) settingsBackground))
-                background = (string) settingsBackground;
+            object? settingsBackground = entry.GetSetting()?.GetBackground();
+            if (settingsBackground is string background1 && StringUtils.IsValidHexColor(background1))
+                background = background1;
+
             for (int j = 0, lenJ = scopes.Count; j < lenJ; j++)
             {
-                var _scope = scopes[j].Trim();
+                var scopeStr = scopes[j].Trim();
 
-                var segments = new List<string>(_scope.Split(' '));
+                var segments = new List<string>(scopeStr.Split(' '));
 
-                var scope = segments[segments.Count - 1];
-                List<string> parentScopes = null;
+                var scope = segments[^1];
+                List<string>? parentScopes = null;
                 if (segments.Count > 1)
                 {
                     parentScopes = new(segments);
@@ -252,54 +251,53 @@ internal class ParsedTheme
         // Sort rules lexicographically, and then by index if necessary
         parsedThemeRules.Sort((a, b) =>
         {
-            var r = StringUtils.StrCmp(a.scope, b.scope);
+            var r = StringUtils.StrCmp(a.Scope, b.Scope);
             if (r != 0)
                 return r;
-            r = StringUtils.StrArrCmp(a.parentScopes, b.parentScopes);
+            r = StringUtils.StrArrCmp(a.ParentScopes, b.ParentScopes);
             if (r != 0)
                 return r;
-            return a.index.CompareTo(b.index);
+            return a.Index.CompareTo(b.Index);
         });
 
         // Determine defaults
         var defaultFontStyle = FontStyle.None;
         var defaultForeground = "#000000";
         var defaultBackground = "#ffffff";
-        while (parsedThemeRules.Count >= 1 && "".Equals(parsedThemeRules[0].scope))
+
+        while (parsedThemeRules.Count >= 1 && "".Equals(parsedThemeRules[0].Scope))
         {
             var incomingDefaults = parsedThemeRules[0];
             parsedThemeRules.RemoveAt(0); // shift();
-            if (incomingDefaults.fontStyle != FontStyle.NotSet)
-                defaultFontStyle = incomingDefaults.fontStyle;
-            if (incomingDefaults.foreground != null)
-                defaultForeground = incomingDefaults.foreground;
-            if (incomingDefaults.background != null)
-                defaultBackground = incomingDefaults.background;
+            if (incomingDefaults.FontStyle != FontStyle.NotSet)
+                defaultFontStyle = incomingDefaults.FontStyle;
+            if (incomingDefaults.Foreground != null)
+                defaultForeground = incomingDefaults.Foreground;
+            if (incomingDefaults.Background != null)
+                defaultBackground = incomingDefaults.Background;
         }
 
         var defaults = new ThemeTrieElementRule(string.Empty, 0, null, defaultFontStyle,
             colorMap.GetId(defaultForeground), colorMap.GetId(defaultBackground));
 
-        var root = new ThemeTrieElement(new(string.Empty, 0, null, FontStyle.NotSet, 0, 0),
-            new());
+        var root = new ThemeTrieElement(new(string.Empty, 0, null, FontStyle.NotSet, 0, 0), []);
+
         foreach (var rule in parsedThemeRules)
-            root.Insert(rule.name, 0, rule.scope, rule.parentScopes, rule.fontStyle, colorMap.GetId(rule.foreground),
-                colorMap.GetId(rule.background));
+            root.Insert(rule.Name, 0, rule.Scope, rule.ParentScopes, rule.FontStyle, colorMap.GetId(rule.Foreground),
+                colorMap.GetId(rule.Background));
+
         return new(defaults, root);
     }
 
     internal List<ThemeTrieElementRule> Match(string scopeName)
     {
-        lock (_cachedMatchRoot)
-        {
-            if (!_cachedMatchRoot.TryGetValue(scopeName, out var value))
-            {
-                value = _root.Match(scopeName);
-                _cachedMatchRoot[scopeName] = value;
-            }
-
+        if (_cachedMatchRoot.TryGetValue(scopeName, out var value))
             return value;
-        }
+
+        value = _root.Match(scopeName);
+        _cachedMatchRoot[scopeName] = value;
+
+        return value;
     }
 
     internal ThemeTrieElementRule GetDefaults()

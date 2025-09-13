@@ -9,5 +9,6 @@ internal class TokenTypeMatcher
     }
 
     public int Type { get; }
+
     public Predicate<List<string>> Matcher { get; }
 }

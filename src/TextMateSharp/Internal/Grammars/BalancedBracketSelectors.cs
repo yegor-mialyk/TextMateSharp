@@ -47,7 +47,7 @@ public class BalancedBracketSelectors
             if ("*".Equals(selector))
             {
                 _allowAny = true;
-                return new Predicate<List<string>>[0];
+                return [];
             }
 
             var matcher = Matcher.Matcher.CreateMatchers(selector);
@@ -59,7 +59,7 @@ public class BalancedBracketSelectors
         return result.ToArray();
     }
 
-    private Predicate<List<string>>[] CreateUnbalancedBracketScopes(List<string> unbalancedBracketScopes)
+    private static Predicate<List<string>>[] CreateUnbalancedBracketScopes(List<string> unbalancedBracketScopes)
     {
         var result = new List<Predicate<List<string>>>();
 

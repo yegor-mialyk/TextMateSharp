@@ -4,7 +4,7 @@ using TextMateSharp.Internal.Types;
 
 namespace TextMateSharp.Internal.Grammars.Parser;
 
-public class GrammarRaw : Dictionary<string, object>, IRawRepository, IRawRule, IRawGrammar, IRawCaptures
+public class GrammarRaw : Dictionary<string, object?>, IRawRepository, IRawRule, IRawGrammar, IRawCaptures
 {
     private const string FIRST_LINE_MATCH = "firstLineMatch";
     private const string FILE_TYPES = "fileTypes";
@@ -41,19 +41,16 @@ public class GrammarRaw : Dictionary<string, object>, IRawRepository, IRawRule, 
         return Keys.GetEnumerator();
     }
 
-    public Dictionary<string, IRawRule>? GetInjections()
+    public Dictionary<string, IRawRule?>? GetInjections()
     {
         var result = TryGetObject<GrammarRaw>(INJECTIONS);
 
-        if (result == null)
-            return null;
-
-        return ConvertToDictionary<IRawRule>(result);
+        return result == null ? null : ConvertToDictionary<IRawRule>(result);
     }
 
-    public string GetInjectionSelector()
+    public string? GetInjectionSelector()
     {
-        return (string) this[INJECTION_SELECTOR];
+        return (string?) this[INJECTION_SELECTOR];
     }
 
     public string? GetScopeName()
@@ -92,17 +89,20 @@ public class GrammarRaw : Dictionary<string, object>, IRawRepository, IRawRule, 
         return TryGetObject<string>(FIRST_LINE_MATCH);
     }
 
-    public IRawGrammar Clone()
+    public IRawGrammar? Clone()
     {
-        return (IRawGrammar) Clone(this);
+        return (IRawGrammar?) Clone(this);
     }
 
-    public IRawRepository Merge(params IRawRepository[] sources)
+    public IRawRepository Merge(params IRawRepository?[] sources)
     {
         var target = new GrammarRaw();
+
         foreach (var source in sources)
         {
-            var sourceRaw = (GrammarRaw) source;
+            if (source is not GrammarRaw sourceRaw)
+                continue;
+
             foreach (var key in sourceRaw.Keys)
                 target[key] = sourceRaw[key];
         }
@@ -120,7 +120,7 @@ public class GrammarRaw : Dictionary<string, object>, IRawRepository, IRawRule, 
         return TryGetObject<IRawRule>(DOLLAR_BASE);
     }
 
-    public void SetBase(IRawRule ruleBase)
+    public void SetBase(IRawRule? ruleBase)
     {
         this[DOLLAR_BASE] = ruleBase;
     }
@@ -137,8 +137,8 @@ public class GrammarRaw : Dictionary<string, object>, IRawRepository, IRawRule, 
 
     public int GetId()
     {
-        if (!TryGetValue(ID, out var result))
-            return RuleId.NO_INIT;
+        if (!TryGetValue(ID, out var result) || result is null)
+            return Rule.NO_INIT;
 
         return (int) result;
     }
@@ -153,7 +153,7 @@ public class GrammarRaw : Dictionary<string, object>, IRawRepository, IRawRule, 
         return TryGetObject<string>(NAME);
     }
 
-    public void SetName(string name)
+    public void SetName(string? name)
     {
         this[NAME] = name;
     }
@@ -229,7 +229,7 @@ public class GrammarRaw : Dictionary<string, object>, IRawRepository, IRawRule, 
         return result?.Cast<IRawRule>().ToList();
     }
 
-    public void SetPatterns(ICollection<IRawRule> patterns)
+    public void SetPatterns(ICollection<IRawRule>? patterns)
     {
         this[PATTERNS] = patterns;
     }
@@ -277,7 +277,7 @@ public class GrammarRaw : Dictionary<string, object>, IRawRepository, IRawRule, 
         this[APPLY_END_PATTERN_LAST] = applyEndPatternLast;
     }
 
-    public object Clone(object value)
+    public object? Clone(object? value)
     {
         if (value is GrammarRaw rawToClone)
         {
@@ -285,15 +285,13 @@ public class GrammarRaw : Dictionary<string, object>, IRawRepository, IRawRule, 
 
             foreach (var key in rawToClone.Keys)
                 raw[key] = Clone(rawToClone[key]);
+
             return raw;
         }
 
         if (value is IList list)
         {
-            var result = new List<object>();
-            foreach (var obj in list)
-                result.Add(Clone(obj));
-            return result;
+            return list.Cast<object?>().Select(Clone).ToList();
         }
 
         /*if (value is string)
@@ -307,9 +305,9 @@ public class GrammarRaw : Dictionary<string, object>, IRawRepository, IRawRule, 
         return value;
     }
 
-    private static Dictionary<string, T> ConvertToDictionary<T>(GrammarRaw grammarRaw)
+    private static Dictionary<string, T?> ConvertToDictionary<T>(GrammarRaw grammarRaw)
     {
-        return grammarRaw.Keys.ToDictionary(key => key, key => (T) grammarRaw[key]);
+        return grammarRaw.Keys.ToDictionary(key => key, key => (T?) grammarRaw[key]);
     }
 
     private T? TryGetObject<T>(string key)
@@ -317,6 +315,6 @@ public class GrammarRaw : Dictionary<string, object>, IRawRepository, IRawRule, 
         if (!TryGetValue(key, out var result))
             return default;
 
-        return (T) result;
+        return (T?) result;
     }
 }

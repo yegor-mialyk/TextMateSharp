@@ -10,6 +10,7 @@ public class TokenizeStringResult
         StoppedEarly = stoppedEarly;
     }
 
-    public StateStack Stack { get; private set; }
-    public bool StoppedEarly { get; private set; }
+    public StateStack Stack { get; }
+
+    public bool StoppedEarly { get; }
 }

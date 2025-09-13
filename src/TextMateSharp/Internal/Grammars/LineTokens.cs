@@ -23,7 +23,7 @@ internal class LineTokens
         bool emitBinaryTokens,
         string lineText,
         List<TokenTypeMatcher> tokenTypeOverrides,
-        BalancedBracketSelectors balancedBracketSelectors)
+        BalancedBracketSelectors? balancedBracketSelectors)
     {
         _emitBinaryTokens = emitBinaryTokens;
         _lineText = lineText;

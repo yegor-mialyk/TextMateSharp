@@ -17,7 +17,7 @@ public class RegExpSource
     private bool _hasAnchor;
     private string _source;
 
-    public RegExpSource(string regExpSource, int ruleId) :
+    public RegExpSource(string? regExpSource, int ruleId) :
         this(regExpSource, ruleId, true)
     {
     }

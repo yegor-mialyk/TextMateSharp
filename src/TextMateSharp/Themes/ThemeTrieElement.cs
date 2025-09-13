@@ -41,15 +41,17 @@ public class ThemeTrieElement
     {
         if (a.scopeDepth == b.scopeDepth)
         {
-            var aParentScopes = a.parentScopes;
-            var bParentScopes = b.parentScopes;
-            var aParentScopesLen = aParentScopes == null ? 0 : aParentScopes.Count;
-            var bParentScopesLen = bParentScopes == null ? 0 : bParentScopes.Count;
+            var aParentScopes = a.ParentScopes;
+            var bParentScopes = b.ParentScopes;
+            var aParentScopesLen = aParentScopes?.Count ?? 0;
+            var bParentScopesLen = bParentScopes?.Count ?? 0;
+
             if (aParentScopesLen == bParentScopesLen)
                 for (var i = 0; i < aParentScopesLen; i++)
                 {
-                    var aLen = aParentScopes[i].Length;
-                    var bLen = bParentScopes[i].Length;
+                    var aLen = aParentScopes![i].Length;
+                    var bLen = bParentScopes![i].Length;
+
                     if (aLen != bLen)
                         return bLen - aLen;
                 }
@@ -65,8 +67,7 @@ public class ThemeTrieElement
         List<ThemeTrieElementRule> arr;
         if ("".Equals(scope))
         {
-            arr = new();
-            arr.Add(mainRule);
+            arr = [mainRule];
             arr.AddRange(rulesWithParentScopes);
             return SortBySpecificity(arr);
         }
@@ -95,7 +96,7 @@ public class ThemeTrieElement
         return SortBySpecificity(arr);
     }
 
-    public void Insert(string name, int scopeDepth, string scope, List<string> parentScopes, FontStyle fontStyle,
+    public void Insert(string? name, int scopeDepth, string scope, List<string>? parentScopes, FontStyle fontStyle,
         int foreground,
         int background)
     {
@@ -147,7 +148,7 @@ public class ThemeTrieElement
 
         // Try to merge into existing rule
         foreach (var rule in rulesWithParentScopes)
-            if (StringUtils.StrArrCmp(rule.parentScopes, parentScopes) == 0)
+            if (StringUtils.StrArrCmp(rule.ParentScopes, parentScopes) == 0)
             {
                 // bingo! => we get to merge this into an existing one
                 rule.AcceptOverwrite(rule.name, scopeDepth, fontStyle, foreground, background);
@@ -168,26 +169,5 @@ public class ThemeTrieElement
 
         rulesWithParentScopes.Add(
             new(name, scopeDepth, parentScopes, fontStyle, foreground, background));
-    }
-
-    public override int GetHashCode()
-    {
-        return children.GetHashCode() +
-            mainRule.GetHashCode() +
-            rulesWithParentScopes.GetHashCode();
-    }
-
-    public override bool Equals(object obj)
-    {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (GetType() != obj.GetType())
-            return false;
-        var other = (ThemeTrieElement) obj;
-        return Equals(children, other.children) &&
-            Equals(mainRule, other.mainRule) &&
-            Equals(rulesWithParentScopes, other.rulesWithParentScopes);
     }
 }

@@ -8,7 +8,7 @@ namespace TextMateSharp.Internal.Grammars;
 
 public class Grammar : IGrammar, IRuleFactoryHelper
 {
-    private readonly BalancedBracketSelectors _balancedBracketSelectors;
+    private readonly BalancedBracketSelectors? _balancedBracketSelectors;
     private readonly BasicScopeAttributesProvider _basicScopeAttributesProvider;
     private readonly IGrammarRepository _grammarRepository;
     private readonly Dictionary<string, IRawGrammar> _includedGrammars;
@@ -16,7 +16,7 @@ public class Grammar : IGrammar, IRuleFactoryHelper
     private readonly string _rootScopeName;
     private readonly Dictionary<int, Rule> _ruleId2desc;
     private readonly List<TokenTypeMatcher> _tokenTypeMatchers;
-    private List<Injection> _injections;
+    private List<Injection>? _injections;
     private volatile bool _isCompiling;
     private int _lastRuleId;
     private int _rootId;
@@ -34,7 +34,7 @@ public class Grammar : IGrammar, IRuleFactoryHelper
         _rootScopeName = scopeName;
         _basicScopeAttributesProvider = new(initialLanguage, themeProvider, embeddedLanguages);
         _balancedBracketSelectors = balancedBracketSelectors;
-        _rootId = RuleId.NO_INIT;
+        _rootId = Rule.NO_INIT;
         _includedGrammars = new();
         _grammarRepository = grammarRepository;
         _rawGrammar = InitGrammar(grammar, null);
@@ -45,27 +45,27 @@ public class Grammar : IGrammar, IRuleFactoryHelper
 
     public bool IsCompiling => _isCompiling;
 
-    public ITokenizeLineResult TokenizeLine(string lineText)
+    public ITokenizeLineResult? TokenizeLine(string lineText)
     {
         return TokenizeLine(lineText, null, TimeSpan.MaxValue);
     }
 
-    public ITokenizeLineResult TokenizeLine(string lineText, IStateStack? prevState, TimeSpan timeLimit)
+    public ITokenizeLineResult? TokenizeLine(string lineText, IStateStack? prevState, TimeSpan timeLimit)
     {
-        return (ITokenizeLineResult) Tokenize(lineText, (StateStack) prevState, false, timeLimit);
+        return (ITokenizeLineResult?) Tokenize(lineText, (StateStack?) prevState, false, timeLimit);
     }
 
-    public ITokenizeLineResult2 TokenizeLine2(string lineText)
+    public ITokenizeLineResult2? TokenizeLine2(string lineText)
     {
         return TokenizeLine2(lineText, null, TimeSpan.MaxValue);
     }
 
-    public ITokenizeLineResult2 TokenizeLine2(string lineText, IStateStack prevState, TimeSpan timeLimit)
+    public ITokenizeLineResult2? TokenizeLine2(string lineText, IStateStack? prevState, TimeSpan timeLimit)
     {
-        return (ITokenizeLineResult2) Tokenize(lineText, (StateStack) prevState, true, timeLimit);
+        return (ITokenizeLineResult2?) Tokenize(lineText, (StateStack?) prevState, true, timeLimit);
     }
 
-    public string GetName()
+    public string? GetName()
     {
         return _rawGrammar.GetName();
     }
@@ -88,30 +88,26 @@ public class Grammar : IGrammar, IRuleFactoryHelper
         return result;
     }
 
-    public Rule GetRule(int patternId)
+    public Rule? GetRule(int patternId)
     {
-        Rule result;
-        _ruleId2desc.TryGetValue(patternId, out result);
+        _ruleId2desc.TryGetValue(patternId, out var result);
         return result;
     }
 
-    public IRawGrammar GetExternalGrammar(string scopeName, IRawRepository repository)
+    public IRawGrammar? GetExternalGrammar(string scopeName, IRawRepository? repository)
     {
         if (_includedGrammars.TryGetValue(scopeName, out var value))
             return value;
 
-        if (_grammarRepository != null)
-        {
-            var rawIncludedGrammar = _grammarRepository.Lookup(scopeName);
-            if (rawIncludedGrammar != null)
-            {
-                _includedGrammars[scopeName] =
-                    InitGrammar(rawIncludedGrammar, repository != null ? repository.GetBase() : null);
-                return _includedGrammars[scopeName];
-            }
-        }
+        var rawIncludedGrammar = _grammarRepository.Lookup(scopeName);
 
-        return null;
+        if (rawIncludedGrammar == null)
+            return null;
+
+        _includedGrammars[scopeName] =
+            InitGrammar(rawIncludedGrammar, repository?.GetBase());
+
+        return _includedGrammars[scopeName];
     }
 
     public void OnDidChangeTheme()
@@ -130,9 +126,8 @@ public class Grammar : IGrammar, IRuleFactoryHelper
         {
             _injections = new();
 
-            var grammarRepository = new GrammarRepository(this);
             var scopeName = _rootScopeName;
-            var grammar = grammarRepository.Lookup(scopeName);
+            var grammar = scopeName.Equals(_rootScopeName) ? _rawGrammar : GetExternalGrammar(scopeName, null);
 
             if (grammar != null)
             {
@@ -147,12 +142,12 @@ public class Grammar : IGrammar, IRuleFactoryHelper
             }
 
             // add injection grammars contributed for the current scope
-            var injectionScopeNames = _grammarRepository.Injections(scopeName);
+            var injectionScopeNames = _grammarRepository.GetInjections(scopeName);
 
             if (injectionScopeNames != null)
                 foreach (var injectionScopeName in injectionScopeNames)
                 {
-                    var injectionGrammar = GetExternalGrammar(injectionScopeName);
+                    var injectionGrammar = GetExternalGrammar(injectionScopeName, null);
                     if (injectionGrammar != null)
                     {
                         var selector = injectionGrammar.GetInjectionSelector();
@@ -167,13 +162,13 @@ public class Grammar : IGrammar, IRuleFactoryHelper
                 }
 
             // sort by priority
-            _injections.Sort((i1, i2) => { return i1.Priority - i2.Priority; });
+            _injections.Sort((i1, i2) => i1.Priority - i2.Priority);
         }
 
         return _injections;
     }
 
-    private void CollectInjections(List<Injection> result, string selector, IRawRule rule,
+    private static void CollectInjections(List<Injection> result, string selector, IRawRule rule,
         IRuleFactoryHelper ruleFactoryHelper, IRawGrammar grammar)
     {
         var matchers = Matcher.Matcher.CreateMatchers(selector);
@@ -187,12 +182,7 @@ public class Grammar : IGrammar, IRuleFactoryHelper
                 matcher.Priority));
     }
 
-    public IRawGrammar GetExternalGrammar(string scopeName)
-    {
-        return GetExternalGrammar(scopeName, null);
-    }
-
-    private IRawGrammar InitGrammar(IRawGrammar grammar, IRawRule ruleBase)
+    private static IRawGrammar InitGrammar(IRawGrammar grammar, IRawRule? ruleBase)
     {
         grammar = grammar.Clone();
         if (grammar.GetRepository() == null)
@@ -200,22 +190,14 @@ public class Grammar : IGrammar, IRuleFactoryHelper
         var self = new GrammarRaw();
         self.SetPatterns(grammar.GetPatterns());
         self.SetName(grammar.GetScopeName());
-        grammar.GetRepository().SetSelf(self);
-        if (ruleBase != null)
-            grammar.GetRepository().SetBase(ruleBase);
-        else
-            grammar.GetRepository().SetBase(grammar.GetRepository().GetSelf());
+        grammar.GetRepository()?.SetSelf(self);
+        grammar.GetRepository()?.SetBase(ruleBase ?? grammar.GetRepository()?.GetSelf());
         return grammar;
     }
 
-    private IRawGrammar Clone(IRawGrammar grammar)
+    private object? Tokenize(string lineText, StateStack? prevState, bool emitBinaryTokens, TimeSpan timeLimit)
     {
-        return (IRawGrammar) ((GrammarRaw) grammar).Clone();
-    }
-
-    private object Tokenize(string lineText, StateStack? prevState, bool emitBinaryTokens, TimeSpan timeLimit)
-    {
-        if (_rootId == RuleId.NO_INIT)
+        if (_rootId == Rule.NO_INIT)
             GenerateRootId();
 
         bool isFirstLine;
@@ -244,19 +226,22 @@ public class Grammar : IGrammar, IRuleFactoryHelper
             prevState.Reset();
         }
 
-        if (string.IsNullOrEmpty(lineText) || lineText[lineText.Length - 1] != '\n')
+        if (string.IsNullOrEmpty(lineText) || lineText[^1] != '\n')
             // Only add \n if the passed lineText didn't have it.
             lineText += '\n';
+
         var lineLength = lineText.Length;
+
         var lineTokens = new LineTokens(emitBinaryTokens, lineText, _tokenTypeMatchers, _balancedBracketSelectors);
+
         var tokenizeResult = LineTokenizer.TokenizeString(this, lineText, isFirstLine, 0, prevState,
             lineTokens, true, timeLimit);
 
-        if (emitBinaryTokens)
-            return new TokenizeLineResult2(lineTokens.GetBinaryResult(tokenizeResult.Stack, lineLength),
+        return emitBinaryTokens
+            ? new TokenizeLineResult2(lineTokens.GetBinaryResult(tokenizeResult.Stack, lineLength),
+                tokenizeResult.Stack, tokenizeResult.StoppedEarly)
+            : new TokenizeLineResult(lineTokens.GetResult(tokenizeResult.Stack, lineLength),
                 tokenizeResult.Stack, tokenizeResult.StoppedEarly);
-        return new TokenizeLineResult(lineTokens.GetResult(tokenizeResult.Stack, lineLength),
-            tokenizeResult.Stack, tokenizeResult.StoppedEarly);
     }
 
     private void GenerateRootId()
@@ -264,7 +249,7 @@ public class Grammar : IGrammar, IRuleFactoryHelper
         _isCompiling = true;
         try
         {
-            _rootId = RuleFactory.GetCompiledRuleId(_rawGrammar.GetRepository().GetSelf(), this,
+            _rootId = RuleFactory.GetCompiledRuleId(_rawGrammar.GetRepository()?.GetSelf(), this,
                 _rawGrammar.GetRepository());
         }
         finally
@@ -273,7 +258,7 @@ public class Grammar : IGrammar, IRuleFactoryHelper
         }
     }
 
-    private List<TokenTypeMatcher> GenerateTokenTypeMatchers(Dictionary<string, int> tokenTypes)
+    private static List<TokenTypeMatcher> GenerateTokenTypeMatchers(Dictionary<string, int>? tokenTypes)
     {
         var result = new List<TokenTypeMatcher>();
 
@@ -281,32 +266,9 @@ public class Grammar : IGrammar, IRuleFactoryHelper
             return result;
 
         foreach (var selector in tokenTypes.Keys)
-        foreach (var matcher in Matcher.Matcher.CreateMatchers(selector))
-            result.Add(new(tokenTypes[selector], matcher.Matcher));
+            foreach (var matcher in Matcher.Matcher.CreateMatchers(selector))
+                result.Add(new(tokenTypes[selector], matcher.Matcher));
 
         return result;
-    }
-
-    private class GrammarRepository : IGrammarRepository
-    {
-        private readonly Grammar _grammar;
-
-        internal GrammarRepository(Grammar grammar)
-        {
-            _grammar = grammar;
-        }
-
-        public IRawGrammar Lookup(string scopeName)
-        {
-            if (scopeName.Equals(_grammar._rootScopeName))
-                return _grammar._rawGrammar;
-
-            return _grammar.GetExternalGrammar(scopeName, null);
-        }
-
-        public ICollection<string> Injections(string targetScope)
-        {
-            return _grammar._grammarRepository.Injections(targetScope);
-        }
     }
 }

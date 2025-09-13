@@ -2,16 +2,17 @@ namespace TextMateSharp.Internal.Types;
 
 public interface IRawGrammar
 {
-    IRawGrammar Clone();
+    IRawGrammar? Clone();
+
     IRawRepository? GetRepository();
 
     string? GetScopeName();
 
     ICollection<IRawRule>? GetPatterns();
 
-    Dictionary<string, IRawRule>? GetInjections();
+    Dictionary<string, IRawRule?>? GetInjections();
 
-    string GetInjectionSelector();
+    string? GetInjectionSelector();
 
     ICollection<string> GetFileTypes();
 

@@ -74,7 +74,7 @@ internal class LineTokenizer
 
         var hasAdvanced = captureIndices != null && captureIndices.Length > 0 && captureIndices[0].End > _linePos;
 
-        if (matchedRuleId.Equals(RuleId.END_RULE))
+        if (matchedRuleId.Equals(Rule.END_RULE))
         {
             // We matched the `end` for this rule => pop it
             var poppedRule = (BeginEndRule) _stack.GetRule(_grammar);
@@ -120,7 +120,7 @@ internal class LineTokenizer
             var beforePush = _stack;
             // push it on the stack rule
             var scopeName = rule.GetName(_lineText, captureIndices);
-            var nameScopesList = _stack.ContentNameScopesList.PushAtributed(
+            var nameScopesList = _stack.ContentNameScopesList.PushAttributed(
                 scopeName,
                 _grammar);
 
@@ -152,7 +152,7 @@ internal class LineTokenizer
                     _lineText,
                     captureIndices);
 
-                var contentNameScopesList = nameScopesList.PushAtributed(
+                var contentNameScopesList = nameScopesList.PushAttributed(
                     contentName,
                     _grammar);
 
@@ -194,7 +194,7 @@ internal class LineTokenizer
                 _anchorPosition = captureIndices[0].End;
 
                 var contentName = pushedRule.GetContentName(_lineText, captureIndices);
-                var contentNameScopesList = nameScopesList.PushAtributed(contentName, _grammar);
+                var contentNameScopesList = nameScopesList.PushAttributed(contentName, _grammar);
                 _stack = _stack.WithContentNameScopesList(contentNameScopesList);
 
                 if (pushedRule.WhileHasBackReferences)
@@ -310,7 +310,7 @@ internal class LineTokenizer
         // The lower the better
         var bestMatchRating = int.MaxValue;
         IOnigCaptureIndex[] bestMatchCaptureIndices = null;
-        var bestMatchRuleId = RuleId.NO_INIT;
+        var bestMatchRuleId = Rule.NO_INIT;
         var bestMatchResultPriority = 0;
 
         var scopes = stack.ContentNameScopesList.GetScopeNames();
@@ -407,9 +407,9 @@ internal class LineTokenizer
             {
                 // the capture requires additional matching
                 var scopeName = captureRule.GetName(lineText, captureIndices);
-                var nameScopesList = stack.ContentNameScopesList.PushAtributed(scopeName, grammar);
+                var nameScopesList = stack.ContentNameScopesList.PushAttributed(scopeName, grammar);
                 var contentName = captureRule.GetContentName(lineText, captureIndices);
-                var contentNameScopesList = nameScopesList.PushAtributed(contentName, grammar);
+                var contentNameScopesList = nameScopesList.PushAttributed(contentName, grammar);
 
                 // the capture requires additional matching
                 var stackClone = stack.Push(
@@ -436,7 +436,7 @@ internal class LineTokenizer
                 var baseElement = localStack.Count == 0
                     ? stack.ContentNameScopesList
                     : localStack[localStack.Count - 1].Scopes;
-                var captureRuleScopesList = baseElement.PushAtributed(captureRuleScopeName, grammar);
+                var captureRuleScopesList = baseElement.PushAttributed(captureRuleScopeName, grammar);
                 localStack.Add(new(captureRuleScopesList, captureIndex.End));
             }
         }
@@ -458,7 +458,7 @@ internal class LineTokenizer
     private WhileCheckResult CheckWhileConditions(Grammar grammar, string lineText, bool isFirstLine,
         int linePos, StateStack stack, LineTokens lineTokens)
     {
-        var anchorPosition = stack.BeginRuleCapturedEOL ? 0 : -1;
+        var anchorPosition = stack.BeginRuleCapturedEol ? 0 : -1;
         var whileRules = new List<WhileStack>();
         for (var node = stack; node != null; node = node.Pop())
         {
@@ -472,12 +472,12 @@ internal class LineTokenizer
             var whileRule = whileRules[i];
             var ruleScanner = whileRule.Rule.CompileWhile(whileRule.Stack.EndRule, isFirstLine,
                 anchorPosition == linePos);
-            var r = ruleScanner.Scanner.FindNextMatchSync(lineText, linePos);
+            var r = ruleScanner?.Scanner.FindNextMatchSync(lineText, linePos);
 
             if (r != null)
             {
-                var matchedRuleId = ruleScanner.Rules[r.GetIndex()];
-                if (RuleId.WHILE_RULE != matchedRuleId)
+                var matchedRuleId = ruleScanner!.Rules[r.GetIndex()];
+                if (matchedRuleId != Rule.WHILE_RULE)
                 {
                     // we shouldn't end up here
                     stack = whileRule.Stack.Pop();

@@ -5,6 +5,20 @@ namespace TextMateSharp.Internal.Rules;
 
 public abstract class Rule
 {
+    public const int NO_INIT = -3;
+
+    public const int NO_RULE = 0;
+
+    /**
+     * This is a special constant to indicate that the end regexp matched.
+     */
+    public const int END_RULE = -1;
+
+    /**
+     * This is a special constant to indicate that the while regexp matched.
+     */
+    public const int WHILE_RULE = -2;
+
     private readonly string _contentName;
 
     private readonly bool _contentNameIsCapturing;
@@ -12,7 +26,7 @@ public abstract class Rule
 
     private readonly bool _nameIsCapturing;
 
-    public Rule(int id, string name, string contentName)
+    public Rule(int id, string? name, string? contentName)
     {
         Id = id;
 
@@ -24,7 +38,7 @@ public abstract class Rule
 
     public int Id { get; private set; }
 
-    public string GetName(string lineText, IOnigCaptureIndex[] captureIndices)
+    public string GetName(string? lineText, IOnigCaptureIndex[]? captureIndices)
     {
         if (!_nameIsCapturing)
             return _name;

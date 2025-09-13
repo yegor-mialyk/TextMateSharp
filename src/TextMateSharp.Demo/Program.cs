@@ -72,9 +72,9 @@ internal class Program
                 {
                     var result = grammar.TokenizeLine(line, ruleStack, TimeSpan.MaxValue);
 
-                    ruleStack = result.RuleStack;
+                    ruleStack = result?.RuleStack;
 
-                    foreach (var token in result.Tokens)
+                    foreach (var token in result?.Tokens ?? [])
                     {
                         var startIndex = token.StartIndex > line.Length ? line.Length : token.StartIndex;
                         var endIndex = token.EndIndex > line.Length ? line.Length : token.EndIndex;
@@ -146,7 +146,9 @@ internal class Program
         if (colorId == -1)
             return Color.Default;
 
-        return HexToColor(theme.GetColor(colorId));
+        var hexString = theme.GetColor(colorId);
+
+        return hexString == null ? Color.Default : HexToColor(hexString);
     }
 
     private static Decoration GetDecoration(FontStyle fontStyle)

@@ -4,7 +4,7 @@ public class IncludeOnlyRule : Rule
 {
     private RegExpSourceList? _cachedCompiledPatterns;
 
-    public IncludeOnlyRule(int id, string name, string contentName, CompilePatternsResult patterns) : base(id, name,
+    public IncludeOnlyRule(int id, string? name, string? contentName, CompilePatternsResult patterns) : base(id, name,
         contentName)
     {
         Patterns = patterns.Patterns;

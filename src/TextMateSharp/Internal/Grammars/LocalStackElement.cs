@@ -9,5 +9,6 @@ internal class LocalStackElement
     }
 
     public AttributedScopeStack Scopes { get; private set; }
+
     public int EndPos { get; private set; }
 }

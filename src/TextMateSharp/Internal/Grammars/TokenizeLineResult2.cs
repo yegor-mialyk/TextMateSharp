@@ -11,7 +11,9 @@ public class TokenizeLineResult2 : ITokenizeLineResult2
         StoppedEarly = stoppedEarly;
     }
 
-    public bool StoppedEarly { get; private set; }
+    public bool StoppedEarly { get; }
+
     public int[] Tokens { get; }
+
     public IStateStack RuleStack { get; }
 }

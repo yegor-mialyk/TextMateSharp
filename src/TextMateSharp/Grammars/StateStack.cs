@@ -7,14 +7,14 @@ public interface IStateStack
 {
     int Depth { get; }
     int RuleId { get; }
-    string EndRule { get; }
+    string? EndRule { get; }
 }
 
 public class StateStack : IStateStack
 {
-    public static StateStack NULL = new(
+    public static readonly StateStack NULL = new(
         null,
-        Internal.Rules.RuleId.NO_RULE,
+        Rule.NO_RULE,
         0,
         0,
         false,
@@ -27,19 +27,19 @@ public class StateStack : IStateStack
     private int _enterPos;
 
     public StateStack(
-        StateStack parent,
+        StateStack? parent,
         int ruleId,
         int enterPos,
         int anchorPos,
         bool beginRuleCapturedEOL,
-        string endRule,
-        AttributedScopeStack nameScopesList,
-        AttributedScopeStack contentNameScopesList)
+        string? endRule,
+        AttributedScopeStack? nameScopesList,
+        AttributedScopeStack? contentNameScopesList)
     {
         Parent = parent;
         Depth = Parent != null ? Parent.Depth + 1 : 1;
         RuleId = ruleId;
-        BeginRuleCapturedEOL = beginRuleCapturedEOL;
+        BeginRuleCapturedEol = beginRuleCapturedEOL;
         EndRule = endRule;
         NameScopesList = nameScopesList;
         ContentNameScopesList = contentNameScopesList;
@@ -48,35 +48,37 @@ public class StateStack : IStateStack
         _anchorPos = anchorPos;
     }
 
-    public StateStack Parent { get; }
-    public AttributedScopeStack NameScopesList { get; }
-    public AttributedScopeStack ContentNameScopesList { get; }
-    public bool BeginRuleCapturedEOL { get; }
+    public StateStack? Parent { get; }
+    public AttributedScopeStack? NameScopesList { get; }
+    public AttributedScopeStack? ContentNameScopesList { get; }
+    public bool BeginRuleCapturedEol { get; }
     public int Depth { get; }
     public int RuleId { get; }
-    public string EndRule { get; }
+    public string? EndRule { get; }
 
-    private static bool StructuralEquals(StateStack a, StateStack b)
+    private static bool StructuralEquals(StateStack? a, StateStack? b)
     {
+        // ReSharper disable once PossibleUnintendedReferenceComparison
         if (a == b)
             return true;
+
         if (a == null || b == null)
             return false;
+
         return a.Depth == b.Depth &&
             a.RuleId == b.RuleId &&
             Equals(a.EndRule, b.EndRule) &&
             StructuralEquals(a.Parent, b.Parent);
     }
 
-    public override bool Equals(object other)
+    public override bool Equals(object? other)
     {
-        if (other == this)
-            return true;
-        if (other == null)
+        if (other is not StateStack stackElement)
             return false;
-        if (!(other is StateStack))
-            return false;
-        var stackElement = (StateStack) other;
+
+        if (ContentNameScopesList == null)
+            return stackElement.ContentNameScopesList == null;
+
         return StructuralEquals(this, stackElement) && ContentNameScopesList.Equals(stackElement.ContentNameScopesList);
     }
 
@@ -84,9 +86,9 @@ public class StateStack : IStateStack
     {
         return Depth.GetHashCode() +
             RuleId.GetHashCode() +
-            EndRule.GetHashCode() +
-            Parent.GetHashCode() +
-            ContentNameScopesList.GetHashCode();
+            (EndRule?.GetHashCode() ?? 0) +
+            (Parent?.GetHashCode() ?? 0) +
+            (ContentNameScopesList?.GetHashCode() ?? 0);
     }
 
     public void Reset()
@@ -100,16 +102,14 @@ public class StateStack : IStateStack
         }
     }
 
-    public StateStack Pop()
+    public StateStack? Pop()
     {
         return Parent;
     }
 
     public StateStack SafePop()
     {
-        if (Parent != null)
-            return Parent;
-        return this;
+        return Parent ?? this;
     }
 
     public StateStack Push(
@@ -117,9 +117,9 @@ public class StateStack : IStateStack
         int enterPos,
         int anchorPos,
         bool beginRuleCapturedEOL,
-        string endRule,
-        AttributedScopeStack nameScopesList,
-        AttributedScopeStack contentNameScopesList)
+        string? endRule,
+        AttributedScopeStack? nameScopesList,
+        AttributedScopeStack? contentNameScopesList)
     {
         return new(
             this,
@@ -142,35 +142,45 @@ public class StateStack : IStateStack
         return _anchorPos;
     }
 
-    public Rule GetRule(IRuleRegistry grammar)
+    public Rule? GetRule(IRuleRegistry grammar)
     {
         return grammar.GetRule(RuleId);
     }
 
     private void AppendString(List<string> res)
     {
-        if (Parent != null)
-            Parent.AppendString(res);
+        Parent?.AppendString(res);
 
-        res.Add('(' + RuleId.ToString() + ')'); //, TODO-${this.nameScopesList}, TODO-${this.contentNameScopesList})`;
+        res.Add('(' + RuleId.ToString() + ')'); //TODO-${this.nameScopesList}, TODO-${this.contentNameScopesList})`;
     }
 
     public override string ToString()
     {
         var r = new List<string>();
+
         AppendString(r);
+
         return '[' + string.Join(", ", r) + ']';
     }
 
-    public StateStack WithContentNameScopesList(AttributedScopeStack contentNameScopesList)
+    public StateStack? WithContentNameScopesList(AttributedScopeStack? contentNameScopesList)
     {
-        if (ContentNameScopesList.Equals(contentNameScopesList))
-            return this;
-        return Parent.Push(
+        if (ContentNameScopesList != null)
+        {
+            if (ContentNameScopesList.Equals(contentNameScopesList))
+                return this;
+        }
+        else
+        {
+            if (contentNameScopesList == null)
+                return this;
+        }
+
+        return Parent?.Push(
             RuleId,
             _enterPos,
             _anchorPos,
-            BeginRuleCapturedEOL,
+            BeginRuleCapturedEol,
             EndRule,
             NameScopesList,
             contentNameScopesList);
@@ -180,12 +190,13 @@ public class StateStack : IStateStack
     {
         if (EndRule != null && EndRule.Equals(endRule))
             return this;
+
         return new(
             Parent,
             RuleId,
             _enterPos,
             _anchorPos,
-            BeginRuleCapturedEOL,
+            BeginRuleCapturedEol,
             endRule,
             NameScopesList,
             ContentNameScopesList);

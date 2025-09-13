@@ -3,7 +3,7 @@ namespace TextMateSharp.Internal.Types;
 public interface IRawRepository
 {
     // IRawRule GetRule(string name);
-    IRawRepository Merge(params IRawRepository[] sources);
+    IRawRepository Merge(params IRawRepository?[] sources);
 
     IRawRule? GetProp(string name);
 
@@ -13,5 +13,5 @@ public interface IRawRepository
 
     void SetSelf(IRawRule raw);
 
-    void SetBase(IRawRule ruleBase);
+    void SetBase(IRawRule? ruleBase);
 }
