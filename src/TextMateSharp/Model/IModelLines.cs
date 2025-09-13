@@ -6,10 +6,10 @@ public interface IModelLines
     void RemoveLine(int lineIndex);
     void UpdateLine(int lineIndex);
     int GetSize();
-    ModelLine Get(int lineIndex);
+    ModelLine? Get(int lineIndex);
     void ForEach(Action<ModelLine> action);
     int GetNumberOfLines();
-    string GetLineText(int lineIndex);
+    string? GetLineText(int lineIndex);
     int GetLineLength(int lineIndex);
     void Dispose();
 }

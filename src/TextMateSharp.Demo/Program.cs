@@ -28,8 +28,6 @@ internal class Program
                 return;
             }
 
-            var ini = Environment.TickCount;
-
             var options = new RegistryOptions(@"D:\MY\TextMateSharp\schemas\Themes");
 
             options.LoadFromDirectories(@"D:\MY\TextMateSharp\schemas\Grammars");
@@ -58,7 +56,9 @@ internal class Program
                 return;
             }
 
-            Console.WriteLine("Grammar loaded in {0} ms.", Environment.TickCount - ini);
+            Console.WriteLine("""
+                              Grammar loaded in {0} ms.", Environment.TickCount - ini);
+                              """);
 
             var tokenizeIni = Environment.TickCount;
 
@@ -66,9 +66,7 @@ internal class Program
 
             using (var sr = new StreamReader(fileToParse))
             {
-                var line = sr.ReadLine();
-
-                while (line != null)
+                while (sr.ReadLine() is { } line)
                 {
                     var result = grammar.TokenizeLine(line, ruleStack, TimeSpan.MaxValue);
 
@@ -100,7 +98,6 @@ internal class Program
                     }
 
                     Console.WriteLine();
-                    line = sr.ReadLine();
                 }
             }
 

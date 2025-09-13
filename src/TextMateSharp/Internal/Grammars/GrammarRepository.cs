@@ -112,8 +112,6 @@ public class GrammarRepository : IGrammarRepository, IThemeProvider
             rawGrammar,
             0,
             null,
-            null,
-            null,
             this,
             this);
 

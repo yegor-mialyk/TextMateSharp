@@ -21,11 +21,11 @@ public class IncludeOnlyRule : Rule
         foreach (var pattern in Patterns)
         {
             var rule = grammar.GetRule(pattern);
-            rule.CollectPatternsRecursive(grammar, sourceList, false);
+            rule?.CollectPatternsRecursive(grammar, sourceList, false);
         }
     }
 
-    public override CompiledRule Compile(IRuleRegistry grammar, string endRegexSource, bool allowA, bool allowG)
+    public override CompiledRule? Compile(IRuleRegistry grammar, string endRegexSource, bool allowA, bool allowG)
     {
         if (_cachedCompiledPatterns == null)
         {

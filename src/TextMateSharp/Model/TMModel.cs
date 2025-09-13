@@ -355,8 +355,8 @@ public class TMModel : ITMModel
                 }
 
                 var endStateIndex = lineIndex + 1;
-                LineTokens r = null;
-                string text = null;
+                LineTokens? r;
+                string? text;
                 var modeLine = model._lines.Get(lineIndex);
                 try
                 {
@@ -364,7 +364,7 @@ public class TMModel : ITMModel
                     if (text == null)
                         continue;
                     // Tokenize only the first X characters
-                    r = model._tokenizer.Tokenize(text, modeLine.State, 0, MAX_LEN_TO_TOKENIZE,
+                    r = model._tokenizer.Tokenize(text, modeLine?.State, 0, MAX_LEN_TO_TOKENIZE,
                         stopLineTokenizationAfter);
                 }
                 catch (Exception e)

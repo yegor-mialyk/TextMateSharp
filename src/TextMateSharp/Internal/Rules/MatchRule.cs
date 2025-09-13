@@ -12,14 +12,14 @@ public class MatchRule : Rule
         _cachedCompiledPatterns = null;
     }
 
-    public List<CaptureRule> Captures { get; private set; }
+    public List<CaptureRule?> Captures { get; private set; }
 
     public override void CollectPatternsRecursive(IRuleRegistry grammar, RegExpSourceList sourceList, bool isFirst)
     {
         sourceList.Push(_match);
     }
 
-    public override CompiledRule Compile(IRuleRegistry grammar, string endRegexSource, bool allowA, bool allowG)
+    public override CompiledRule? Compile(IRuleRegistry grammar, string endRegexSource, bool allowA, bool allowG)
     {
         if (_cachedCompiledPatterns == null)
         {

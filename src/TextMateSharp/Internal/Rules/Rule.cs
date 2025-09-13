@@ -19,14 +19,14 @@ public abstract class Rule
      */
     public const int WHILE_RULE = -2;
 
-    private readonly string _contentName;
+    private readonly string? _contentName;
 
     private readonly bool _contentNameIsCapturing;
-    private readonly string _name;
+    private readonly string? _name;
 
     private readonly bool _nameIsCapturing;
 
-    public Rule(int id, string? name, string? contentName)
+    protected Rule(int id, string? name, string? contentName)
     {
         Id = id;
 
@@ -36,21 +36,18 @@ public abstract class Rule
         _contentNameIsCapturing = RegexSource.HasCaptures(_contentName);
     }
 
-    public int Id { get; private set; }
+    public int Id { get; }
 
-    public string GetName(string? lineText, IOnigCaptureIndex[]? captureIndices)
+    public string? GetName(string? lineText, IOnigCaptureIndex[]? captureIndices)
     {
-        if (!_nameIsCapturing)
-            return _name;
-
-        return RegexSource.ReplaceCaptures(_name, lineText, captureIndices);
+        return _nameIsCapturing ? RegexSource.ReplaceCaptures(_name, lineText, captureIndices) : _name;
     }
 
-    public string GetContentName(string lineText, IOnigCaptureIndex[] captureIndices)
+    public string? GetContentName(string lineText, IOnigCaptureIndex[] captureIndices)
     {
-        if (!_contentNameIsCapturing)
-            return _contentName;
-        return RegexSource.ReplaceCaptures(_contentName, lineText, captureIndices);
+        return _contentNameIsCapturing
+            ? RegexSource.ReplaceCaptures(_contentName, lineText, captureIndices)
+            : _contentName;
     }
 
     public abstract void CollectPatternsRecursive(IRuleRegistry grammar, RegExpSourceList sourceList, bool isFirst);

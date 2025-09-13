@@ -4,14 +4,14 @@ namespace TextMateSharp.Internal.Matcher;
 
 public interface IMatchesName<in T>
 {
-    bool Match(ICollection<string> names, T scopes);
+    bool Match(ICollection<string?> names, T scopes);
 }
 
 public class NameMatcher : IMatchesName<List<string>>
 {
     public static readonly IMatchesName<List<string>> Default = new NameMatcher();
 
-    public bool Match(ICollection<string> identifers, List<string> scopes)
+    public bool Match(ICollection<string?> identifers, List<string> scopes)
     {
         if (scopes.Count < identifers.Count)
             return false;

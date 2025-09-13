@@ -2,16 +2,16 @@ using System.Text.RegularExpressions;
 
 namespace TextMateSharp.Internal.Matcher;
 
-public class MatcherBuilder<T>
+public partial class MatcherBuilder<T>
 {
     private readonly IMatchesName<T> _matchesName;
     private readonly Tokenizer _tokenizer;
-    private string _token;
-    public List<MatcherWithPriority<T>> Results;
+    private string? _token;
+
+    public List<MatcherWithPriority<T>> Results { get; } = [];
 
     public MatcherBuilder(string expression, IMatchesName<T> matchesName)
     {
-        Results = new();
         _tokenizer = new(expression);
         _matchesName = matchesName;
 
@@ -94,7 +94,7 @@ public class MatcherBuilder<T>
         };
     }
 
-    private Predicate<T> ParseOperand()
+    private Predicate<T>? ParseOperand()
     {
         if ("-".Equals(_token))
         {
@@ -119,7 +119,7 @@ public class MatcherBuilder<T>
 
         if (IsIdentifier(_token))
         {
-            ICollection<string> identifiers = new List<string>();
+            ICollection<string?> identifiers = new List<string?>();
             do
             {
                 identifiers.Add(_token);
@@ -132,7 +132,7 @@ public class MatcherBuilder<T>
         return null;
     }
 
-    private bool IsIdentifier(string token)
+    private static bool IsIdentifier(string? token)
     {
         if (string.IsNullOrEmpty(token))
             return false;
@@ -160,28 +160,26 @@ public class MatcherBuilder<T>
         return true;
     }
 
-    private class Tokenizer
+    private partial class Tokenizer
     {
-        private static readonly Regex REGEXP = new("([LR]:|[\\w\\.:][\\w\\.:\\-]*|[\\,\\|\\-\\(\\)])");
+        private static readonly Regex REGEXP = MyRegex();
+
         private readonly string _input;
-        private Match _currentMatch;
+        private Match? _currentMatch;
 
         public Tokenizer(string input)
         {
             _input = input;
         }
 
-        public string Next()
+        public string? Next()
         {
-            if (_currentMatch == null)
-                _currentMatch = REGEXP.Match(_input);
-            else
-                _currentMatch = _currentMatch.NextMatch();
+            _currentMatch = _currentMatch == null ? REGEXP.Match(_input) : _currentMatch.NextMatch();
 
-            if (_currentMatch.Success)
-                return _currentMatch.Value;
-
-            return null;
+            return _currentMatch.Success ? _currentMatch.Value : null;
         }
+
+        [GeneratedRegex("([LR]:|[\\w\\.:][\\w\\.:\\-]*|[\\,\\|\\-\\(\\)])")]
+        private static partial Regex MyRegex();
     }
 }

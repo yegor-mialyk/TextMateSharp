@@ -8,14 +8,12 @@ namespace TextMateSharp.Internal.Grammars;
 
 public class Grammar : IGrammar, IRuleFactoryHelper
 {
-    private readonly BalancedBracketSelectors? _balancedBracketSelectors;
     private readonly BasicScopeAttributesProvider _basicScopeAttributesProvider;
     private readonly IGrammarRepository _grammarRepository;
     private readonly Dictionary<string, IRawGrammar> _includedGrammars;
     private readonly IRawGrammar _rawGrammar;
     private readonly string _rootScopeName;
     private readonly Dictionary<int, Rule> _ruleId2desc;
-    private readonly List<TokenTypeMatcher> _tokenTypeMatchers;
     private List<Injection>? _injections;
     private volatile bool _isCompiling;
     private int _lastRuleId;
@@ -26,43 +24,24 @@ public class Grammar : IGrammar, IRuleFactoryHelper
         IRawGrammar grammar,
         int initialLanguage,
         Dictionary<string, int>? embeddedLanguages,
-        Dictionary<string, int>? tokenTypes,
-        BalancedBracketSelectors? balancedBracketSelectors,
         IGrammarRepository grammarRepository,
         IThemeProvider themeProvider)
     {
         _rootScopeName = scopeName;
         _basicScopeAttributesProvider = new(initialLanguage, themeProvider, embeddedLanguages);
-        _balancedBracketSelectors = balancedBracketSelectors;
         _rootId = Rule.NO_INIT;
         _includedGrammars = new();
         _grammarRepository = grammarRepository;
         _rawGrammar = InitGrammar(grammar, null);
         _ruleId2desc = new();
         _injections = null;
-        _tokenTypeMatchers = GenerateTokenTypeMatchers(tokenTypes);
     }
 
     public bool IsCompiling => _isCompiling;
 
-    public ITokenizeLineResult? TokenizeLine(string lineText)
-    {
-        return TokenizeLine(lineText, null, TimeSpan.MaxValue);
-    }
-
     public ITokenizeLineResult? TokenizeLine(string lineText, IStateStack? prevState, TimeSpan timeLimit)
     {
-        return (ITokenizeLineResult?) Tokenize(lineText, (StateStack?) prevState, false, timeLimit);
-    }
-
-    public ITokenizeLineResult2? TokenizeLine2(string lineText)
-    {
-        return TokenizeLine2(lineText, null, TimeSpan.MaxValue);
-    }
-
-    public ITokenizeLineResult2? TokenizeLine2(string lineText, IStateStack? prevState, TimeSpan timeLimit)
-    {
-        return (ITokenizeLineResult2?) Tokenize(lineText, (StateStack?) prevState, true, timeLimit);
+        return (ITokenizeLineResult?) Tokenize(lineText, (StateStack?) prevState, timeLimit);
     }
 
     public string? GetName()
@@ -168,7 +147,7 @@ public class Grammar : IGrammar, IRuleFactoryHelper
         return _injections;
     }
 
-    private static void CollectInjections(List<Injection> result, string selector, IRawRule rule,
+    private static void CollectInjections(List<Injection> result, string selector, IRawRule? rule,
         IRuleFactoryHelper ruleFactoryHelper, IRawGrammar grammar)
     {
         var matchers = Matcher.Matcher.CreateMatchers(selector);
@@ -195,7 +174,7 @@ public class Grammar : IGrammar, IRuleFactoryHelper
         return grammar;
     }
 
-    private object? Tokenize(string lineText, StateStack? prevState, bool emitBinaryTokens, TimeSpan timeLimit)
+    private object? Tokenize(string lineText, StateStack? prevState, TimeSpan timeLimit)
     {
         if (_rootId == Rule.NO_INIT)
             GenerateRootId();
@@ -232,15 +211,12 @@ public class Grammar : IGrammar, IRuleFactoryHelper
 
         var lineLength = lineText.Length;
 
-        var lineTokens = new LineTokens(emitBinaryTokens, lineText, _tokenTypeMatchers, _balancedBracketSelectors);
+        var lineTokens = new LineTokens();
 
         var tokenizeResult = LineTokenizer.TokenizeString(this, lineText, isFirstLine, 0, prevState,
             lineTokens, true, timeLimit);
 
-        return emitBinaryTokens
-            ? new TokenizeLineResult2(lineTokens.GetBinaryResult(tokenizeResult.Stack, lineLength),
-                tokenizeResult.Stack, tokenizeResult.StoppedEarly)
-            : new TokenizeLineResult(lineTokens.GetResult(tokenizeResult.Stack, lineLength),
+        return new TokenizeLineResult(lineTokens.GetResult(tokenizeResult.Stack, lineLength),
                 tokenizeResult.Stack, tokenizeResult.StoppedEarly);
     }
 
@@ -256,19 +232,5 @@ public class Grammar : IGrammar, IRuleFactoryHelper
         {
             _isCompiling = false;
         }
-    }
-
-    private static List<TokenTypeMatcher> GenerateTokenTypeMatchers(Dictionary<string, int>? tokenTypes)
-    {
-        var result = new List<TokenTypeMatcher>();
-
-        if (tokenTypes == null)
-            return result;
-
-        foreach (var selector in tokenTypes.Keys)
-            foreach (var matcher in Matcher.Matcher.CreateMatchers(selector))
-                result.Add(new(tokenTypes[selector], matcher.Matcher));
-
-        return result;
     }
 }

@@ -53,14 +53,14 @@ public class RegexSource
         return sb.ToString();
     }
 
-    public static bool HasCaptures(string regexSource)
+    public static bool HasCaptures(string? regexSource)
     {
         if (regexSource == null)
             return false;
         return CAPTURING_REGEX_SOURCE.Match(regexSource).Success;
     }
 
-    public static string ReplaceCaptures(string regexSource, string captureSource, IOnigCaptureIndex[] captureIndices)
+    public static string ReplaceCaptures(string? regexSource, string? captureSource, IOnigCaptureIndex[]? captureIndices)
     {
         return CAPTURING_REGEX_SOURCE.Replace(
             regexSource, m => GetReplacement(m.Value, captureSource, captureIndices));

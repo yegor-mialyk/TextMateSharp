@@ -89,9 +89,9 @@ public class GrammarRaw : Dictionary<string, object?>, IRawRepository, IRawRule,
         return TryGetObject<string>(FIRST_LINE_MATCH);
     }
 
-    public IRawGrammar? Clone()
+    public IRawGrammar Clone()
     {
-        return (IRawGrammar?) Clone(this);
+        return (IRawGrammar) Clone(this);
     }
 
     public IRawRepository Merge(params IRawRepository?[] sources)

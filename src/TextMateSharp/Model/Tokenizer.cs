@@ -5,7 +5,7 @@ namespace TextMateSharp.Model;
 public class Tokenizer : ITokenizationSupport
 {
     private readonly DecodeMap _decodeMap;
-    private readonly IGrammar _grammar;
+    private readonly IGrammar? _grammar;
 
     public Tokenizer(IGrammar grammar)
     {
@@ -18,12 +18,12 @@ public class Tokenizer : ITokenizationSupport
         return new(null, null);
     }
 
-    public LineTokens Tokenize(string line, TMState state, TimeSpan timeLimit)
+    public LineTokens? Tokenize(string line, TMState? state, TimeSpan timeLimit)
     {
         return Tokenize(line, state, 0, 0, timeLimit);
     }
 
-    public LineTokens Tokenize(string line, TMState state, int offsetDelta, int maxLen, TimeSpan timeLimit)
+    public LineTokens? Tokenize(string line, TMState? state, int offsetDelta, int maxLen, TimeSpan timeLimit)
     {
         if (_grammar == null)
             return null;
@@ -34,12 +34,12 @@ public class Tokenizer : ITokenizationSupport
             line = line.Substring(0, maxLen);
 
         var textMateResult = _grammar.TokenizeLine(line, freshState.GetRuleStack(), timeLimit);
-        freshState.SetRuleStack(textMateResult.RuleStack);
+        freshState.SetRuleStack(textMateResult?.RuleStack);
 
         // Create the result early and fill in the tokens later
         var tokens = new List<TMToken>();
-        string lastTokenType = null;
-        var tmResultTokens = textMateResult.Tokens;
+        string? lastTokenType = null;
+        var tmResultTokens = textMateResult?.Tokens ?? [];
         for (int tokenIndex = 0, len = tmResultTokens.Length; tokenIndex < len; tokenIndex++)
         {
             var token = tmResultTokens[tokenIndex];
@@ -58,7 +58,7 @@ public class Tokenizer : ITokenizationSupport
         return new(tokens, offsetDelta + line.Length, freshState);
     }
 
-    private string DecodeTextMateToken(DecodeMap decodeMap, List<string> scopes)
+    private static string DecodeTextMateToken(DecodeMap decodeMap, List<string> scopes)
     {
         var prevTokenScopes = decodeMap.PrevToken.Scopes;
         var prevTokenScopesLength = prevTokenScopes.Length;
@@ -83,7 +83,7 @@ public class Tokenizer : ITokenizationSupport
                 sameAsPrev = false;
             }
 
-            var tokens = decodeMap.getTokenIds(scope);
+            var tokens = decodeMap.GetTokenIds(scope);
             prevScopeTokensMaps = new(prevScopeTokensMaps);
             foreach (var token in tokens)
                 prevScopeTokensMaps[token] = true;

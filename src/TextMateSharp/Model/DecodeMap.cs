@@ -4,42 +4,30 @@ namespace TextMateSharp.Model;
 
 internal class DecodeMap
 {
-    private readonly Dictionary<string /* scope */, int[] /* ids */> _scopeToTokenIds;
-    private readonly Dictionary<int /* id */, string /* id */> _tokenIdToToken;
-    private readonly Dictionary<string /* token */, int? /* id */> _tokenToTokenId;
+    private readonly Dictionary<string /* scope */, int[] /* ids */> _scopeToTokenIds = new();
+    private readonly Dictionary<int /* id */, string /* id */> _tokenIdToToken = new();
+    private readonly Dictionary<string /* token */, int? /* id */> _tokenToTokenId = new();
 
-    private int lastAssignedId;
+    private int _lastAssignedId;
 
-    public DecodeMap()
+    public TMTokenDecodeData PrevToken { get; set; } = new([], new());
+
+    public int[] GetTokenIds(string scope)
     {
-        PrevToken = new(new string[0], new());
-
-        lastAssignedId = 0;
-        _scopeToTokenIds = new();
-        _tokenToTokenId = new();
-        _tokenIdToToken = new();
-    }
-
-    public TMTokenDecodeData PrevToken { get; set; }
-
-    public int[] getTokenIds(string scope)
-    {
-        int[] tokens;
-        _scopeToTokenIds.TryGetValue(scope, out tokens);
+        _scopeToTokenIds.TryGetValue(scope, out var tokens);
         if (tokens != null)
             return tokens;
 
-        var tmpTokens = scope.Split(new[] { "[.]" }, StringSplitOptions.None);
+        var tmpTokens = scope.Split(["[.]"], StringSplitOptions.None);
 
         tokens = new int[tmpTokens.Length];
         for (var i = 0; i < tmpTokens.Length; i++)
         {
             var token = tmpTokens[i];
-            int? tokenId;
-            _tokenToTokenId.TryGetValue(token, out tokenId);
+            _tokenToTokenId.TryGetValue(token, out var tokenId);
             if (tokenId == null)
             {
-                tokenId = ++lastAssignedId;
+                tokenId = ++_lastAssignedId;
                 _tokenToTokenId[token] = tokenId.Value;
                 _tokenIdToToken[tokenId.Value] = token;
             }
@@ -55,7 +43,7 @@ internal class DecodeMap
     {
         var result = new StringBuilder();
         var isFirst = true;
-        for (var i = 1; i <= lastAssignedId; i++)
+        for (var i = 1; i <= _lastAssignedId; i++)
             if (tokenMap.ContainsKey(i))
             {
                 if (isFirst)

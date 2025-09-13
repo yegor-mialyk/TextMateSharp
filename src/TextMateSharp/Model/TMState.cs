@@ -4,38 +4,34 @@ namespace TextMateSharp.Model;
 
 public class TMState
 {
-    private readonly TMState _parentEmbedderState;
-    private IStateStack _ruleStack;
+    private readonly TMState? _parentEmbedderState;
+    private IStateStack? _ruleStack;
 
-    public TMState(TMState parentEmbedderState, IStateStack ruleStatck)
+    public TMState(TMState? parentEmbedderState, IStateStack? ruleStack)
     {
         _parentEmbedderState = parentEmbedderState;
-        _ruleStack = ruleStatck;
+        _ruleStack = ruleStack;
     }
 
-    public void SetRuleStack(IStateStack ruleStack)
+    public void SetRuleStack(IStateStack? ruleStack)
     {
         _ruleStack = ruleStack;
     }
 
-    public IStateStack GetRuleStack()
+    public IStateStack? GetRuleStack()
     {
         return _ruleStack;
     }
 
     public TMState Clone()
     {
-        var parentEmbedderStateClone = _parentEmbedderState != null ? _parentEmbedderState.Clone() : null;
-
-        return new(parentEmbedderStateClone, _ruleStack);
+        return new(_parentEmbedderState?.Clone(), _ruleStack);
     }
 
-    public override bool Equals(object other)
+    public override bool Equals(object? other)
     {
-        if (!(other is TMState))
+        if (other is not TMState otherState)
             return false;
-
-        var otherState = (TMState) other;
 
         return Equals(_parentEmbedderState, otherState._parentEmbedderState) &&
             Equals(_ruleStack, otherState._ruleStack);
@@ -43,6 +39,7 @@ public class TMState
 
     public override int GetHashCode()
     {
-        return _parentEmbedderState.GetHashCode() + _ruleStack.GetHashCode();
+        // ReSharper disable once NonReadonlyMemberInGetHashCode
+        return (_parentEmbedderState?.GetHashCode() ?? 0) + (_ruleStack?.GetHashCode() ?? 0);
     }
 }

@@ -6,23 +6,19 @@ using TextMateSharp.Internal.Utils;
 
 namespace TextMateSharp.Internal.Rules;
 
-public class RegExpSource
+public partial class RegExpSource
 {
-    private static readonly Regex HAS_BACK_REFERENCES = new("\\\\(\\d+)");
-    private static readonly Regex BACK_REFERENCING_END = new("\\\\(\\d+)");
+    private static readonly Regex HAS_BACK_REFERENCES = MyRegex();
+    private static readonly Regex BACK_REFERENCING_END = MyRegex1();
+
     private readonly bool _hasBackReferences;
 
     private readonly int _ruleId;
-    private RegExpSourceAnchorCache _anchorCache;
+    private RegExpSourceAnchorCache? _anchorCache;
     private bool _hasAnchor;
-    private string _source;
+    private string? _source;
 
-    public RegExpSource(string? regExpSource, int ruleId) :
-        this(regExpSource, ruleId, true)
-    {
-    }
-
-    public RegExpSource(string regExpSource, int ruleId, bool handleAnchors)
+    public RegExpSource(string? regExpSource, int ruleId, bool handleAnchors = true)
     {
         if (handleAnchors)
         {
@@ -38,43 +34,42 @@ public class RegExpSource
             _anchorCache = BuildAnchorCache();
 
         _ruleId = ruleId;
-        _hasBackReferences = HAS_BACK_REFERENCES.Match(_source).Success;
+        _hasBackReferences = HAS_BACK_REFERENCES.Match(_source ?? string.Empty).Success;
     }
 
     public RegExpSource Clone()
     {
-        return new(_source, _ruleId, true);
+        return new(_source, _ruleId);
     }
 
     public void SetSource(string newSource)
     {
-        if (_source.Equals(newSource))
+        if (_source == newSource)
             return;
+
         _source = newSource;
 
         if (_hasAnchor)
             _anchorCache = BuildAnchorCache();
     }
 
-    private void HandleAnchors(string regExpSource)
+    private void HandleAnchors(string? regExpSource)
     {
         if (regExpSource != null)
         {
             var len = regExpSource.Length;
-            char ch;
-            char nextCh;
             var lastPushedPos = 0;
             var output = new StringBuilder();
 
             var hasAnchor = false;
             for (var pos = 0; pos < len; pos++)
             {
-                ch = regExpSource[pos];
+                var ch = regExpSource[pos];
 
                 if (ch == '\\')
                     if (pos + 1 < len)
                     {
-                        nextCh = regExpSource[pos + 1];
+                        var nextCh = regExpSource[pos + 1];
                         if (nextCh == 'z')
                         {
                             output.Append(regExpSource.SubstringAtIndexes(lastPushedPos, pos));
@@ -120,7 +115,7 @@ public class RegExpSource
                     captureIndex.Start,
                     captureIndex.End));
 
-            return BACK_REFERENCING_END.Replace(_source, m =>
+            return BACK_REFERENCING_END.Replace(_source ?? string.Empty, m =>
             {
                 try
                 {
@@ -142,7 +137,7 @@ public class RegExpSource
         return lineText;
     }
 
-    private string EscapeRegExpCharacters(string value)
+    private static string EscapeRegExpCharacters(string value)
     {
         var valueLen = value.Length;
         var sb = new StringBuilder(valueLen);
@@ -189,7 +184,7 @@ public class RegExpSource
     private RegExpSourceAnchorCache BuildAnchorCache()
     {
         var source = _source;
-        var sourceLen = source.Length;
+        var sourceLen = source?.Length ?? 0;
 
         var A0_G0_result = new StringBuilder(sourceLen);
         var A0_G1_result = new StringBuilder(sourceLen);
@@ -198,12 +193,10 @@ public class RegExpSource
 
         int pos;
         int len;
-        char ch;
-        char nextCh;
 
         for (pos = 0, len = sourceLen; pos < len; pos++)
         {
-            ch = source[pos];
+            var ch = source![pos];
             A0_G0_result.Append(ch);
             A0_G1_result.Append(ch);
             A1_G0_result.Append(ch);
@@ -212,7 +205,7 @@ public class RegExpSource
             if (ch == '\\')
                 if (pos + 1 < len)
                 {
-                    nextCh = source[pos + 1];
+                    var nextCh = source[pos + 1];
                     if (nextCh == 'A')
                     {
                         A0_G0_result.Append('\uFFFF');
@@ -246,7 +239,7 @@ public class RegExpSource
             A1_G1_result.ToString());
     }
 
-    public string ResolveAnchors(bool allowA, bool allowG)
+    public string? ResolveAnchors(bool allowA, bool allowG)
     {
         if (!_hasAnchor)
             return _source;
@@ -254,15 +247,15 @@ public class RegExpSource
         if (allowA)
         {
             if (allowG)
-                return _anchorCache.A1_G1;
+                return _anchorCache?.A1_G1;
 
-            return _anchorCache.A1_G0;
+            return _anchorCache?.A1_G0;
         }
 
         if (allowG)
-            return _anchorCache.A0_G1;
+            return _anchorCache?.A0_G1;
 
-        return _anchorCache.A0_G0;
+        return _anchorCache?.A0_G0;
     }
 
     public bool HasAnchor()
@@ -270,7 +263,7 @@ public class RegExpSource
         return _hasAnchor;
     }
 
-    public string GetSource()
+    public string? GetSource()
     {
         return _source;
     }
@@ -284,4 +277,9 @@ public class RegExpSource
     {
         return _hasBackReferences;
     }
+
+    [GeneratedRegex("\\\\(\\d+)")]
+    private static partial Regex MyRegex();
+    [GeneratedRegex("\\\\(\\d+)")]
+    private static partial Regex MyRegex1();
 }

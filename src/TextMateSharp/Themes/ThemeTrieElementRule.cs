@@ -57,20 +57,4 @@ public class ThemeTrieElementRule
         if (!string.IsNullOrEmpty(name))
             this.name = name;
     }
-
-    public override bool Equals(object? obj)
-    {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (GetType() != obj.GetType())
-            return false;
-        var other = (ThemeTrieElementRule) obj;
-        return background == other.background &&
-            fontStyle == other.fontStyle &&
-            foreground == other.foreground &&
-            Equals(ParentScopes, other.ParentScopes) &&
-            scopeDepth == other.scopeDepth;
-    }
 }

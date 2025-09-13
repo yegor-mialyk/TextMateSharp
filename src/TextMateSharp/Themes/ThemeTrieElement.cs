@@ -6,15 +6,8 @@ public class ThemeTrieElement
 {
     private readonly Dictionary<string /* segment */, ThemeTrieElement> children;
 
-    // _themeTrieElementBrand: void;
-
     private readonly ThemeTrieElementRule mainRule;
     private readonly List<ThemeTrieElementRule> rulesWithParentScopes;
-
-    public ThemeTrieElement(ThemeTrieElementRule mainRule) :
-        this(mainRule, new(), new())
-    {
-    }
 
     public ThemeTrieElement(ThemeTrieElementRule mainRule, List<ThemeTrieElementRule> rulesWithParentScopes) :
         this(mainRule, rulesWithParentScopes, new())
@@ -27,14 +20,6 @@ public class ThemeTrieElement
         this.mainRule = mainRule;
         this.rulesWithParentScopes = rulesWithParentScopes;
         this.children = children;
-    }
-
-    private static List<ThemeTrieElementRule> SortBySpecificity(List<ThemeTrieElementRule> arr)
-    {
-        if (arr.Count == 1)
-            return arr;
-        arr.Sort((a, b) => CmpBySpecificity(a, b));
-        return arr;
     }
 
     private static int CmpBySpecificity(ThemeTrieElementRule a, ThemeTrieElementRule b)
@@ -65,11 +50,13 @@ public class ThemeTrieElement
     public List<ThemeTrieElementRule> Match(string scope)
     {
         List<ThemeTrieElementRule> arr;
+
         if ("".Equals(scope))
         {
             arr = [mainRule];
             arr.AddRange(rulesWithParentScopes);
-            return SortBySpecificity(arr);
+            arr.Sort(CmpBySpecificity);
+            return arr;
         }
 
         var dotIndex = scope.IndexOf('.');
@@ -93,7 +80,8 @@ public class ThemeTrieElement
         if (mainRule.foreground > 0)
             arr.Add(mainRule);
         arr.AddRange(rulesWithParentScopes);
-        return SortBySpecificity(arr);
+        arr.Sort(CmpBySpecificity);
+        return arr;
     }
 
     public void Insert(string? name, int scopeDepth, string scope, List<string>? parentScopes, FontStyle fontStyle,

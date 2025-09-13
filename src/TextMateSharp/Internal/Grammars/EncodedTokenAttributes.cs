@@ -4,16 +4,6 @@ namespace TextMateSharp.Internal.Grammars;
 
 public static class EncodedTokenAttributes
 {
-    public static string ToBinaryStr(int metadata)
-    {
-        var builder = new List<char>(Convert.ToString((uint) metadata, 2));
-
-        while (builder.Count < 32)
-            builder.Insert(0, '0');
-
-        return new(builder.ToArray());
-    }
-
     public static int GetLanguageId(int metadata)
     {
         var uintValue = (uint) metadata;

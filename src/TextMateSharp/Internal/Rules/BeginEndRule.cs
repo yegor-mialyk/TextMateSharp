@@ -8,7 +8,7 @@ public class BeginEndRule : Rule
     private readonly RegExpSource _end;
     private RegExpSourceList? _cachedCompiledPatterns;
 
-    public BeginEndRule(int id, string? name, string? contentName, string? begin, List<CaptureRule?> beginCaptures,
+    public BeginEndRule(int id, string? name, string? contentName, string? begin, List<CaptureRule> beginCaptures,
         string? end, List<CaptureRule?> endCaptures, bool applyEndPatternLast, CompilePatternsResult patterns)
         : base(id, name, contentName)
     {
@@ -27,7 +27,7 @@ public class BeginEndRule : Rule
 
     public List<CaptureRule> BeginCaptures { get; private set; }
     public bool EndHasBackReferences { get; private set; }
-    public List<CaptureRule> EndCaptures { get; private set; }
+    public List<CaptureRule?> EndCaptures { get; private set; }
     public bool ApplyEndPatternLast { get; }
     public bool HasMissingPatterns { get; private set; }
     public IList<int> Patterns { get; }
@@ -43,7 +43,7 @@ public class BeginEndRule : Rule
             foreach (var pattern in Patterns)
             {
                 var rule = grammar.GetRule(pattern);
-                rule.CollectPatternsRecursive(grammar, sourceList, false);
+                rule?.CollectPatternsRecursive(grammar, sourceList, false);
             }
         else
             sourceList.Push(_begin);

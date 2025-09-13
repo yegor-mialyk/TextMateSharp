@@ -2,7 +2,7 @@ namespace TextMateSharp.Internal.Types;
 
 public interface IRawGrammar
 {
-    IRawGrammar? Clone();
+    IRawGrammar Clone();
 
     IRawRepository? GetRepository();
 
