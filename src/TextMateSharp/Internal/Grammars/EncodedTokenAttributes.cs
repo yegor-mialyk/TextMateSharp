@@ -4,37 +4,37 @@ namespace TextMateSharp.Internal.Grammars;
 
 public static class EncodedTokenAttributes
 {
-    public static int GetLanguageId(int metadata)
+    private static int GetLanguageId(int metadata)
     {
         var uintValue = (uint) metadata;
         return (int) ((uintValue & MetadataConsts.LANGUAGEID_MASK) >> MetadataConsts.LANGUAGEID_OFFSET);
     }
 
-    public static int GetTokenType(int metadata)
+    private static int GetTokenType(int metadata)
     {
         var uintValue = (uint) metadata;
         return (int) ((uintValue & MetadataConsts.TOKEN_TYPE_MASK) >> MetadataConsts.TOKEN_TYPE_OFFSET);
     }
 
-    public static bool ContainsBalancedBrackets(int metadata)
+    private static bool ContainsBalancedBrackets(int metadata)
     {
         var uintValue = (uint) metadata;
         return (uintValue & MetadataConsts.BALANCED_BRACKETS_MASK) != 0;
     }
 
-    public static FontStyle GetFontStyle(int metadata)
+    private static FontStyle GetFontStyle(int metadata)
     {
         var uintValue = (uint) metadata;
         return (FontStyle) ((uintValue & MetadataConsts.FONT_STYLE_MASK) >> MetadataConsts.FONT_STYLE_OFFSET);
     }
 
-    public static int GetForeground(int metadata)
+    private static int GetForeground(int metadata)
     {
         var uintValue = (uint) metadata;
         return (int) ((uintValue & MetadataConsts.FOREGROUND_MASK) >> MetadataConsts.FOREGROUND_OFFSET);
     }
 
-    public static int GetBackground(int metadata)
+    private static int GetBackground(int metadata)
     {
         var unitValue = (ulong) metadata;
         return (int) ((unitValue & MetadataConsts.BACKGROUND_MASK) >> MetadataConsts.BACKGROUND_OFFSET);

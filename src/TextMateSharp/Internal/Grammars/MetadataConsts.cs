@@ -35,7 +35,7 @@ namespace TextMateSharp.Internal.Grammars;
  * - f = foreground color (9 bits)
  * - b = background color (9 bits)
  */
-public class MetadataConsts
+public static class MetadataConsts
 {
     public const int LANGUAGEID_OFFSET = 0;
     public const int TOKEN_TYPE_OFFSET = 8;

@@ -252,11 +252,15 @@ public class ParsedTheme
         parsedThemeRules.Sort((a, b) =>
         {
             var r = StringUtils.StrCmp(a.Scope, b.Scope);
+
             if (r != 0)
                 return r;
+
             r = StringUtils.StrArrCmp(a.ParentScopes, b.ParentScopes);
+
             if (r != 0)
                 return r;
+
             return a.Index.CompareTo(b.Index);
         });
 

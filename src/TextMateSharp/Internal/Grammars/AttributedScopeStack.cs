@@ -2,20 +2,13 @@ using TextMateSharp.Themes;
 
 namespace TextMateSharp.Internal.Grammars;
 
-public class AttributedScopeStack
+public class AttributedScopeStack(AttributedScopeStack? parent, string scopePath, int tokenAttributes)
 {
-    public AttributedScopeStack(AttributedScopeStack? parent, string scopePath, int tokenAttributes)
-    {
-        Parent = parent;
-        ScopePath = scopePath;
-        TokenAttributes = tokenAttributes;
-    }
+    private AttributedScopeStack? Parent { get; } = parent;
 
-    public AttributedScopeStack? Parent { get; }
+    private string ScopePath { get; } = scopePath;
 
-    public string ScopePath { get; }
-
-    public int TokenAttributes { get; }
+    private int TokenAttributes { get; } = tokenAttributes;
 
     private static bool StructuralEquals(AttributedScopeStack? a, AttributedScopeStack? b)
     {

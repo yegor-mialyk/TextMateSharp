@@ -29,7 +29,7 @@ public class LineTokens
         _lastTokenEndIndex = endIndex;
     }
 
-    public IToken[] GetResult(StateStack stack, int lineLength)
+    public List<IToken> GetResult(StateStack stack, int lineLength)
     {
         if (_tokens.Count != 0 && _tokens[^1].StartIndex == lineLength - 1)
             // pop produced token for newline
@@ -42,6 +42,6 @@ public class LineTokens
             _tokens[^1].StartIndex = 0;
         }
 
-        return _tokens.ToArray();
+        return _tokens;
     }
 }

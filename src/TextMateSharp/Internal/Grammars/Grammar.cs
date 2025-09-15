@@ -92,48 +92,41 @@ public class Grammar : IGrammar, IRuleFactoryHelper
 
     public List<Injection> GetInjections()
     {
-        if (_injections == null)
-        {
-            _injections = new();
+        if (_injections != null)
+            return _injections;
 
-            var scopeName = _rootScopeName;
-            var grammar = scopeName.Equals(_rootScopeName) ? _rawGrammar : GetExternalGrammar(scopeName, null);
+        _injections = [];
 
-            if (grammar != null)
+        var grammar = _rootScopeName.Equals(_rootScopeName) ? _rawGrammar : GetExternalGrammar(_rootScopeName, null);
+
+        // add injections from the current grammar
+        var rawInjections = grammar?.GetInjections();
+        if (rawInjections != null)
+            foreach (var expression in rawInjections.Keys)
             {
-                // add injections from the current grammar
-                var rawInjections = grammar.GetInjections();
-                if (rawInjections != null)
-                    foreach (var expression in rawInjections.Keys)
-                    {
-                        var rule = rawInjections[expression];
-                        CollectInjections(_injections, expression, rule, this, grammar);
-                    }
+                var rule = rawInjections[expression];
+                CollectInjections(_injections, expression, rule, this, grammar);
             }
 
-            // add injection grammars contributed for the current scope
-            var injectionScopeNames = _grammarRepository.GetInjections(scopeName);
+        // add injection grammars contributed for the current scope
+        var injectionScopeNames = _grammarRepository.GetInjections(_rootScopeName);
 
-            if (injectionScopeNames != null)
-                foreach (var injectionScopeName in injectionScopeNames)
-                {
-                    var injectionGrammar = GetExternalGrammar(injectionScopeName, null);
-                    if (injectionGrammar != null)
-                    {
-                        var selector = injectionGrammar.GetInjectionSelector();
-                        if (selector != null)
-                            CollectInjections(
-                                _injections,
-                                selector,
-                                (IRawRule) injectionGrammar,
-                                this,
-                                injectionGrammar);
-                    }
-                }
+        if (injectionScopeNames != null)
+            foreach (var injectionScopeName in injectionScopeNames)
+            {
+                var injectionGrammar = GetExternalGrammar(injectionScopeName, null);
+                var selector = injectionGrammar?.GetInjectionSelector();
+                if (selector != null)
+                    CollectInjections(
+                        _injections,
+                        selector,
+                        (IRawRule) injectionGrammar,
+                        this,
+                        injectionGrammar);
+            }
 
-            // sort by priority
-            _injections.Sort((i1, i2) => i1.Priority - i2.Priority);
-        }
+        // sort by priority
+        _injections.Sort((i1, i2) => i1.Priority - i2.Priority);
 
         return _injections;
     }
@@ -157,11 +150,14 @@ public class Grammar : IGrammar, IRuleFactoryHelper
         grammar = grammar.Clone();
         if (grammar.GetRepository() == null)
             ((GrammarRaw) grammar).SetRepository(new GrammarRaw());
+
         var self = new GrammarRaw();
         self.SetPatterns(grammar.GetPatterns());
         self.SetName(grammar.GetScopeName());
+
         grammar.GetRepository()?.SetSelf(self);
         grammar.GetRepository()?.SetBase(ruleBase ?? grammar.GetRepository()?.GetSelf());
+
         return grammar;
     }
 
@@ -171,9 +167,11 @@ public class Grammar : IGrammar, IRuleFactoryHelper
             GenerateRootId();
 
         bool isFirstLine;
+
         if (prevState == null || prevState.Equals(StateStack.NULL))
         {
             isFirstLine = true;
+
             var rawDefaultMetadata = _basicScopeAttributesProvider.GetDefaultAttributes();
             var defaultTheme = rawDefaultMetadata.ThemeData[0];
             var defaultMetadata = EncodedTokenAttributes.Set(0, rawDefaultMetadata.LanguageId,
@@ -209,12 +207,13 @@ public class Grammar : IGrammar, IRuleFactoryHelper
             lineTokens, true, timeLimit);
 
         return new TokenizeLineResult(lineTokens.GetResult(tokenizeResult.Stack, lineLength),
-                tokenizeResult.Stack, tokenizeResult.StoppedEarly);
+            tokenizeResult.Stack, tokenizeResult.StoppedEarly);
     }
 
     private void GenerateRootId()
     {
         _isCompiling = true;
+
         try
         {
             _rootId = RuleFactory.GetCompiledRuleId(_rawGrammar.GetRepository()?.GetSelf(), this,

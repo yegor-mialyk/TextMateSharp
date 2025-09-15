@@ -72,10 +72,11 @@ public static class RuleFactory
 
         // Find the maximum capture id
         var maximumCaptureId = 0;
-        int numericCaptureId;
+
         foreach (var captureId in captures)
         {
-            numericCaptureId = ParseInt(captureId);
+            var numericCaptureId = ParseInt(captureId);
+
             if (numericCaptureId > maximumCaptureId)
                 maximumCaptureId = numericCaptureId;
         }
@@ -87,11 +88,14 @@ public static class RuleFactory
         // Fill out result
         foreach (var captureId in captures)
         {
-            numericCaptureId = ParseInt(captureId);
+            var numericCaptureId = ParseInt(captureId);
+
             var retokenizeCapturedWithRuleId = Rule.NO_INIT;
+
             var rule = captures.GetCapture(captureId);
             if (rule?.GetPatterns() != null)
                 retokenizeCapturedWithRuleId = GetCompiledRuleId(captures.GetCapture(captureId), helper, repository);
+
             r[numericCaptureId] = CreateCaptureRule(
                 helper, rule?.GetName(), rule?.GetContentName(),
                 retokenizeCapturedWithRuleId);
@@ -140,6 +144,7 @@ public static class RuleFactory
                     {
                         string? externalGrammarName;
                         string? externalGrammarInclude = null;
+
                         var sharpIndex = include.IndexOf('#');
                         if (sharpIndex >= 0)
                         {

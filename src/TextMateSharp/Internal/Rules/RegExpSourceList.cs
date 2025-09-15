@@ -1,5 +1,3 @@
-using Onigwrap;
-
 namespace TextMateSharp.Internal.Rules;
 
 public class RegExpSourceList
@@ -30,17 +28,18 @@ public class RegExpSourceList
     public void SetSource(int index, string newSource)
     {
         var r = _items[index];
-        if (!newSource.Equals(r.GetSource()))
-        {
-            // bust the cache
-            _cached = null;
-            _anchorCache.A0_G0 = null;
-            _anchorCache.A0_G1 = null;
-            _anchorCache.A1_G0 = null;
-            _anchorCache.A1_G1 = null;
 
-            r.SetSource(newSource);
-        }
+        if (newSource.Equals(r.GetSource()))
+            return;
+
+        // bust the cache
+        _cached = null;
+        _anchorCache.A0_G0 = null;
+        _anchorCache.A0_G1 = null;
+        _anchorCache.A1_G0 = null;
+        _anchorCache.A1_G1 = null;
+
+        r.SetSource(newSource);
     }
 
     public CompiledRule? Compile(bool allowA, bool allowG)
@@ -50,7 +49,7 @@ public class RegExpSourceList
             if (_cached == null)
             {
                 var regexps = _items.Select(regExpSource => regExpSource.GetSource()).ToArray();
-                _cached = new(CreateOnigScanner(regexps), GetRules());
+                _cached = new(new(regexps), GetRules());
             }
 
             return _cached;
@@ -78,20 +77,13 @@ public class RegExpSourceList
     private CompiledRule ResolveAnchors(bool allowA, bool allowG)
     {
         var regexps = _items.Select(regExpSource => regExpSource.ResolveAnchors(allowA, allowG)).ToArray();
-        return new(CreateOnigScanner(regexps), GetRules());
-    }
 
-    private static OnigScanner CreateOnigScanner(string[] regexps)
-    {
-        return new(regexps);
+        return new(new(regexps), GetRules());
     }
 
     private IList<int> GetRules()
     {
-        var ruleIds = new List<int>();
-        foreach (var item in _items)
-            ruleIds.Add(item.GetRuleId());
-        return ruleIds.ToArray();
+        return _items.Select(regExpSource => regExpSource.GetRuleId()).ToList();
     }
 
     private class RegExpSourceListAnchorCache

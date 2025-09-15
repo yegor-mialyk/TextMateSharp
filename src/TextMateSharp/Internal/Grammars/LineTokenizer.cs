@@ -72,7 +72,7 @@ public class LineTokenizer
         var captureIndices = r.CaptureIndexes;
         var matchedRuleId = r.MatchedRuleId;
 
-        var hasAdvanced = captureIndices != null && captureIndices.Length > 0 && captureIndices[0].End > _linePos;
+        var hasAdvanced = captureIndices.Length > 0 && captureIndices[0].End > _linePos;
 
         if (matchedRuleId.Equals(Rule.END_RULE))
         {
@@ -110,7 +110,7 @@ public class LineTokenizer
                 return;
             }
         }
-        else if (captureIndices != null && captureIndices.Length > 0)
+        else if (captureIndices is { Length: > 0 })
         {
             // We matched a rule!
             var rule = _grammar.GetRule(matchedRuleId);
@@ -133,22 +133,20 @@ public class LineTokenizer
                 nameScopesList,
                 nameScopesList);
 
-            if (rule is BeginEndRule)
+            if (rule is BeginEndRule endRule)
             {
-                var pushedRule = (BeginEndRule) rule;
-
                 HandleCaptures(
                     _grammar,
                     _lineText,
                     _isFirstLine,
                     _stack,
                     _lineTokens,
-                    pushedRule.BeginCaptures,
+                    endRule.BeginCaptures,
                     captureIndices);
                 _lineTokens.Produce(_stack, captureIndices[0].End);
                 _anchorPosition = captureIndices[0].End;
 
-                var contentName = pushedRule.GetContentName(
+                var contentName = endRule.GetContentName(
                     _lineText,
                     captureIndices);
 
@@ -158,9 +156,9 @@ public class LineTokenizer
 
                 _stack = _stack.WithContentNameScopesList(contentNameScopesList);
 
-                if (pushedRule.EndHasBackReferences)
+                if (endRule.EndHasBackReferences)
                     _stack = _stack.WithEndRule(
-                        pushedRule.GetEndWithResolvedBackReferences(
+                        endRule.GetEndWithResolvedBackReferences(
                             _lineText,
                             captureIndices));
 
@@ -175,9 +173,8 @@ public class LineTokenizer
                     return;
                 }
             }
-            else if (rule is BeginWhileRule)
+            else if (rule is BeginWhileRule pushedRule)
             {
-                var pushedRule = (BeginWhileRule) rule;
                 // if (IN_DEBUG_MODE) {
                 // console.log(' pushing ' + pushedRule.debugName);
                 // }
@@ -240,7 +237,7 @@ public class LineTokenizer
             }
         }
 
-        if (captureIndices != null && captureIndices.Length > 0 && captureIndices[0].End > _linePos)
+        if (captureIndices is { Length: > 0 } && captureIndices[0].End > _linePos)
         {
             // Advance stream
             _linePos = captureIndices[0].End;
@@ -248,29 +245,23 @@ public class LineTokenizer
         }
     }
 
-    private MatchResult? MatchRule(Grammar grammar, string lineText, in bool isFirstLine, in int linePos,
+    private static MatchResult? MatchRule(Grammar grammar, string lineText, in bool isFirstLine, in int linePos,
         StateStack stack, in int anchorPosition)
     {
         var rule = stack.GetRule(grammar);
 
-        if (rule == null)
-            return null;
+        var ruleScanner = rule?.Compile(grammar, stack.EndRule, isFirstLine, linePos == anchorPosition);
 
-        var ruleScanner = rule.Compile(grammar, stack.EndRule, isFirstLine, linePos == anchorPosition);
+        var r = ruleScanner?.Scanner.FindNextMatchSync(lineText, linePos);
 
-        if (ruleScanner == null)
-            return null;
-
-        var r = ruleScanner.Scanner.FindNextMatchSync(lineText, linePos);
-
-        if (r != null)
-            return new(
+        return r != null
+            ? new(
                 r.GetCaptureIndices(),
-                ruleScanner.Rules[r.GetIndex()]);
-        return null;
+                ruleScanner!.Rules[r.GetIndex()])
+            : null;
     }
 
-    private MatchResult MatchRuleOrInjections(Grammar grammar, string lineText, bool isFirstLine,
+    private static MatchResult? MatchRuleOrInjections(Grammar grammar, string lineText, bool isFirstLine,
         in int linePos, StateStack stack, in int anchorPosition)
     {
         // Look for normal grammar rule
@@ -304,7 +295,7 @@ public class LineTokenizer
         return matchResult;
     }
 
-    private MatchInjectionsResult? MatchInjections(List<Injection> injections, Grammar grammar, string lineText,
+    private static MatchInjectionsResult? MatchInjections(List<Injection> injections, Grammar grammar, string lineText,
         bool isFirstLine, in int linePos, StateStack stack, in int anchorPosition)
     {
         // The lower the better
@@ -369,7 +360,6 @@ public class LineTokenizer
         var len = Math.Min(captures.Count, captureIndices.Length);
         var localStack = new List<LocalStackElement>();
         var maxEnd = captureIndices[0].End;
-        IOnigCaptureIndex captureIndex;
 
         for (var i = 0; i < len; i++)
         {
@@ -378,7 +368,7 @@ public class LineTokenizer
                 // Not interested
                 continue;
 
-            captureIndex = captureIndices[i];
+            var captureIndex = captureIndices[i];
 
             if (captureIndex.Length == 0)
                 // Nothing really captured
@@ -389,21 +379,21 @@ public class LineTokenizer
                 break;
 
             // pop captures while needed
-            while (localStack.Count > 0 && localStack[localStack.Count - 1].EndPos <= captureIndex.Start)
+            while (localStack.Count > 0 && localStack[^1].EndPos <= captureIndex.Start)
             {
                 // pop!
-                lineTokens.ProduceFromScopes(localStack[localStack.Count - 1].Scopes,
-                    localStack[localStack.Count - 1].EndPos);
+                lineTokens.ProduceFromScopes(localStack[^1].Scopes,
+                    localStack[^1].EndPos);
                 localStack.RemoveAt(localStack.Count - 1);
             }
 
             if (localStack.Count > 0)
-                lineTokens.ProduceFromScopes(localStack[localStack.Count - 1].Scopes,
+                lineTokens.ProduceFromScopes(localStack[^1].Scopes,
                     captureIndex.Start);
             else
                 lineTokens.Produce(stack, captureIndex.Start);
 
-            if (captureRule.RetokenizeCapturedWithRuleId != null)
+            if (captureRule.RetokenizeCapturedWithRuleId != Rule.NO_INIT)
             {
                 // the capture requires additional matching
                 var scopeName = captureRule.GetName(lineText, captureIndices);
@@ -435,7 +425,7 @@ public class LineTokenizer
                 // push
                 var baseElement = localStack.Count == 0
                     ? stack.ContentNameScopesList
-                    : localStack[localStack.Count - 1].Scopes;
+                    : localStack[^1].Scopes;
                 var captureRuleScopesList = baseElement.PushAttributed(captureRuleScopeName, grammar);
                 localStack.Add(new(captureRuleScopesList, captureIndex.End));
             }
@@ -444,8 +434,7 @@ public class LineTokenizer
         while (localStack.Count > 0)
         {
             // pop!
-            lineTokens.ProduceFromScopes(localStack[localStack.Count - 1].Scopes,
-                localStack[localStack.Count - 1].EndPos);
+            lineTokens.ProduceFromScopes(localStack[^1].Scopes, localStack[^1].EndPos);
             localStack.RemoveAt(localStack.Count - 1);
         }
     }
@@ -455,7 +444,7 @@ public class LineTokenizer
      * * order. If any fails, cut off the entire stack above the failed while
      * * condition. While conditions may also advance the linePosition.
      */
-    private WhileCheckResult CheckWhileConditions(Grammar grammar, string lineText, bool isFirstLine,
+    private static WhileCheckResult CheckWhileConditions(Grammar grammar, string lineText, bool isFirstLine,
         int linePos, StateStack stack, LineTokens lineTokens)
     {
         var anchorPosition = stack.BeginRuleCapturedEol ? 0 : -1;
@@ -463,8 +452,8 @@ public class LineTokenizer
         for (var node = stack; node != null; node = node.Pop())
         {
             var nodeRule = node.GetRule(grammar);
-            if (nodeRule is BeginWhileRule)
-                whileRules.Add(new(node, (BeginWhileRule) nodeRule));
+            if (nodeRule is BeginWhileRule rule)
+                whileRules.Add(new(node, rule));
         }
 
         for (var i = whileRules.Count - 1; i >= 0; i--)
@@ -515,31 +504,24 @@ public class LineTokenizer
             timeLimit);
     }
 
-    private class WhileStack
+    private class WhileStack(StateStack stack, BeginWhileRule rule)
     {
-        public WhileStack(StateStack stack, BeginWhileRule rule)
-        {
-            Stack = stack;
-            Rule = rule;
-        }
-
-        public StateStack Stack { get; }
-        public BeginWhileRule Rule { get; }
+        public StateStack Stack { get; } = stack;
+        public BeginWhileRule Rule { get; } = rule;
     }
 
-    private class WhileCheckResult
+    private class WhileCheckResult(StateStack stack, int linePos, int anchorPosition, bool isFirstLine)
     {
-        public WhileCheckResult(StateStack stack, int linePos, int anchorPosition, bool isFirstLine)
-        {
-            Stack = stack;
-            LinePos = linePos;
-            AnchorPosition = anchorPosition;
-            IsFirstLine = isFirstLine;
-        }
+        public StateStack Stack { get; } = stack;
+        public int LinePos { get; } = linePos;
+        public int AnchorPosition { get; } = anchorPosition;
+        public bool IsFirstLine { get; } = isFirstLine;
+    }
 
-        public StateStack Stack { get; }
-        public int LinePos { get; }
-        public int AnchorPosition { get; }
-        public bool IsFirstLine { get; }
+    private class LocalStackElement(AttributedScopeStack scopes, int endPos)
+    {
+        public AttributedScopeStack Scopes { get; private set; } = scopes;
+
+        public int EndPos { get; private set; } = endPos;
     }
 }

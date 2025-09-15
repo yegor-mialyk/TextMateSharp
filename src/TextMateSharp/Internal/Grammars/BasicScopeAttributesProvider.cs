@@ -6,12 +6,12 @@ namespace TextMateSharp.Internal.Grammars;
 
 public partial class BasicScopeAttributesProvider
 {
-    private static readonly BasicScopeAttributes _NULL_SCOPE_METADATA = new(0, 0, null);
+    private static readonly BasicScopeAttributes NULL_SCOPE_METADATA = new(0, 0, null);
 
     private static readonly Regex STANDARD_TOKEN_TYPE_REGEXP = MyRegex();
 
     private readonly Dictionary<string, BasicScopeAttributes> _cache = new();
-    private readonly Dictionary<string, int> _embeddedLanguages;
+    private readonly Dictionary<string, int> _embeddedLanguages = new();
     private readonly Regex? _embeddedLanguagesRegex;
 
     private readonly int _initialLanguage;
@@ -23,22 +23,16 @@ public partial class BasicScopeAttributesProvider
     {
         _initialLanguage = initialLanguage;
         _themeProvider = themeProvider;
+
         _defaultAttributes = new(
             _initialLanguage,
             StandardTokenType.NotSet,
             [_themeProvider.GetDefaults()]);
 
-        // embeddedLanguages handling
-        _embeddedLanguages = new();
         if (embeddedLanguages != null)
-            // If embeddedLanguages are configured, fill in `this.embeddedLanguages`
             foreach (var scope in embeddedLanguages.Keys)
-            {
-                var languageId = embeddedLanguages[scope];
-                _embeddedLanguages[scope] = languageId;
-            }
+                _embeddedLanguages[scope] = embeddedLanguages[scope];
 
-        // create the regex
         var escapedScopes = _embeddedLanguages.Keys.Select(RegexSource.EscapeRegExpCharacters).ToList();
 
         if (escapedScopes.Count == 0)
@@ -52,20 +46,15 @@ public partial class BasicScopeAttributesProvider
             /*var reversedScopes = new List<string>(escapedScopes);
             reversedScopes.Sort();
             reversedScopes.Reverse();*/
-            _embeddedLanguagesRegex = new(
-                "^((" +
-                string.Join(")|(", escapedScopes) +
-                "))($|\\.)");
+            _embeddedLanguagesRegex = new($"^(({string.Join(")|(", escapedScopes)}))($|\\.)");
         }
     }
 
     public void OnDidChangeTheme()
     {
         _cache.Clear();
-        _defaultAttributes = new(
-            _initialLanguage,
-            StandardTokenType.NotSet,
-            [_themeProvider.GetDefaults()]);
+
+        _defaultAttributes = new(_initialLanguage, StandardTokenType.NotSet, [_themeProvider.GetDefaults()]);
     }
 
     public BasicScopeAttributes GetDefaultAttributes()
@@ -76,10 +65,12 @@ public partial class BasicScopeAttributesProvider
     public BasicScopeAttributes GetBasicScopeAttributes(string? scopeName)
     {
         if (scopeName == null)
-            return _NULL_SCOPE_METADATA;
+            return NULL_SCOPE_METADATA;
+
         _cache.TryGetValue(scopeName, out var value);
         if (value != null)
             return value;
+
         value = DoGetMetadataForScope(scopeName);
         _cache[scopeName] = value;
         return value;

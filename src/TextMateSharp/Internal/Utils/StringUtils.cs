@@ -80,6 +80,7 @@ public static partial class StringUtils
         for (var i = 0; i < len1; i++)
         {
             var res = StrCmp(a[i], b[i]);
+
             if (res != 0)
                 return res;
         }

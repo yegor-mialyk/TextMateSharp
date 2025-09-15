@@ -4,16 +4,15 @@ public class IncludeOnlyRule : Rule
 {
     private RegExpSourceList? _cachedCompiledPatterns;
 
-    public IncludeOnlyRule(int id, string? name, string? contentName, CompilePatternsResult patterns) : base(id, name,
-        contentName)
+    public IncludeOnlyRule(int id, string? name, string? contentName, CompilePatternsResult patterns)
+        : base(id, name, contentName)
     {
         Patterns = patterns.Patterns;
         HasMissingPatterns = patterns.HasMissingPatterns;
-
-        _cachedCompiledPatterns = null;
     }
 
     public bool HasMissingPatterns { get; }
+
     public IList<int> Patterns { get; }
 
     public override void CollectPatternsRecursive(IRuleRegistry grammar, RegExpSourceList sourceList, bool isFirst)
