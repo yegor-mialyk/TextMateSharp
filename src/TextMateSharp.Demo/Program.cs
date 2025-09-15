@@ -63,7 +63,7 @@ public class Program
 
             var tokenizeIni = Environment.TickCount;
 
-            IStateStack? ruleStack = null;
+            StateStack? ruleStack = null;
 
             using (var sr = new StreamReader(fileToParse))
             {

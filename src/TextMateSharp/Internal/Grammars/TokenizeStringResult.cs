@@ -2,15 +2,9 @@
 
 namespace TextMateSharp.Internal.Grammars;
 
-public class TokenizeStringResult
+public class TokenizeStringResult(StateStack stack, bool stoppedEarly)
 {
-    public TokenizeStringResult(StateStack stack, bool stoppedEarly)
-    {
-        Stack = stack;
-        StoppedEarly = stoppedEarly;
-    }
+    public StateStack Stack { get; } = stack;
 
-    public StateStack Stack { get; }
-
-    public bool StoppedEarly { get; }
+    public bool StoppedEarly { get; } = stoppedEarly;
 }

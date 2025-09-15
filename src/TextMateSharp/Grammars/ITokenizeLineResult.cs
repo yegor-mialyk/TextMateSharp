@@ -6,5 +6,5 @@ public interface ITokenizeLineResult
 
     bool StoppedEarly { get; }
 
-    IStateStack RuleStack { get; }
+    StateStack RuleStack { get; }
 }

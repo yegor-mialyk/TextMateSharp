@@ -2,18 +2,11 @@ using TextMateSharp.Grammars;
 
 namespace TextMateSharp.Internal.Grammars;
 
-public class TokenizeLineResult : ITokenizeLineResult
+public class TokenizeLineResult(IToken[] tokens, StateStack ruleStack, bool stoppedEarly) : ITokenizeLineResult
 {
-    public TokenizeLineResult(IToken[] tokens, IStateStack ruleStack, bool stoppedEarly)
-    {
-        Tokens = tokens;
-        RuleStack = ruleStack;
-        StoppedEarly = stoppedEarly;
-    }
+    public bool StoppedEarly { get; } = stoppedEarly;
 
-    public bool StoppedEarly { get; }
+    public IToken[] Tokens { get; } = tokens;
 
-    public IToken[] Tokens { get; }
-
-    public IStateStack RuleStack { get; }
+    public StateStack RuleStack { get; } = ruleStack;
 }

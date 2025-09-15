@@ -3,14 +3,7 @@ using TextMateSharp.Internal.Rules;
 
 namespace TextMateSharp.Grammars;
 
-public interface IStateStack
-{
-    int Depth { get; }
-    int RuleId { get; }
-    string? EndRule { get; }
-}
-
-public class StateStack : IStateStack
+public class StateStack
 {
     public static readonly StateStack NULL = new(
         null,

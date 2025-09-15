@@ -167,15 +167,10 @@ public class GrammarRepository : IGrammarRepository, IThemeProvider
                 ExtractIncludedScopesInPatterns(result, p);
 
             var include = pattern.GetInclude();
-            if (include == null)
+            if (include is null or "$base" or "$self")
                 continue;
 
-            if (include.Equals("$base") || include.Equals("$self"))
-                // Special includes that can be resolved locally in this grammar
-                continue;
-
-            if (include[0] == '#')
-                // Local include from this grammar
+            if (include.Length > 0 && include[0] == '#')
                 continue;
 
             var sharpIndex = include.IndexOf('#');

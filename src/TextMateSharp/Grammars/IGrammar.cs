@@ -6,5 +6,5 @@ public interface IGrammar
     string? GetName();
     string GetScopeName();
     ICollection<string> GetFileTypes();
-    ITokenizeLineResult? TokenizeLine(string lineText, IStateStack? prevState, TimeSpan timeLimit);
+    ITokenizeLineResult? TokenizeLine(string lineText, StateStack? prevState, TimeSpan timeLimit);
 }

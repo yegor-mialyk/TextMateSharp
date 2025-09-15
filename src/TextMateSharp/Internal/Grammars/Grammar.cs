@@ -10,14 +10,14 @@ public class Grammar : IGrammar, IRuleFactoryHelper
 {
     private readonly BasicScopeAttributesProvider _basicScopeAttributesProvider;
     private readonly IGrammarRepository _grammarRepository;
-    private readonly Dictionary<string, IRawGrammar> _includedGrammars;
+    private readonly Dictionary<string, IRawGrammar> _includedGrammars = new();
     private readonly IRawGrammar _rawGrammar;
     private readonly string _rootScopeName;
-    private readonly Dictionary<int, Rule> _ruleId2desc;
+    private readonly Dictionary<int, Rule> _ruleId2desc = new();
     private List<Injection>? _injections;
     private volatile bool _isCompiling;
     private int _lastRuleId;
-    private int _rootId;
+    private int _rootId = Rule.NO_INIT;
 
     public Grammar(
         string scopeName,
@@ -29,20 +29,11 @@ public class Grammar : IGrammar, IRuleFactoryHelper
     {
         _rootScopeName = scopeName;
         _basicScopeAttributesProvider = new(initialLanguage, themeProvider, embeddedLanguages);
-        _rootId = Rule.NO_INIT;
-        _includedGrammars = new();
         _grammarRepository = grammarRepository;
         _rawGrammar = InitGrammar(grammar, null);
-        _ruleId2desc = new();
-        _injections = null;
     }
 
     public bool IsCompiling => _isCompiling;
-
-    public ITokenizeLineResult? TokenizeLine(string lineText, IStateStack? prevState, TimeSpan timeLimit)
-    {
-        return (ITokenizeLineResult?) Tokenize(lineText, (StateStack?) prevState, timeLimit);
-    }
 
     public string? GetName()
     {
@@ -174,7 +165,7 @@ public class Grammar : IGrammar, IRuleFactoryHelper
         return grammar;
     }
 
-    private object? Tokenize(string lineText, StateStack? prevState, TimeSpan timeLimit)
+    public ITokenizeLineResult? TokenizeLine(string lineText, StateStack? prevState, TimeSpan timeLimit)
     {
         if (_rootId == Rule.NO_INIT)
             GenerateRootId();
@@ -192,6 +183,7 @@ public class Grammar : IGrammar, IRuleFactoryHelper
             var rootScopeName = GetRule(_rootId)?.GetName(null, null);
             if (rootScopeName == null)
                 return null;
+
             var rawRootMetadata = _basicScopeAttributesProvider.GetBasicScopeAttributes(rootScopeName);
             var rootMetadata = AttributedScopeStack.MergeAttributes(defaultMetadata, null, rawRootMetadata);
 

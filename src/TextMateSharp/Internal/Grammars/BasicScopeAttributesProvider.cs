@@ -4,11 +4,12 @@ using TextMateSharp.Themes;
 
 namespace TextMateSharp.Internal.Grammars;
 
-public class BasicScopeAttributesProvider
+public partial class BasicScopeAttributesProvider
 {
     private static readonly BasicScopeAttributes _NULL_SCOPE_METADATA = new(0, 0, null);
 
-    private static readonly Regex STANDARD_TOKEN_TYPE_REGEXP = new("\\b(comment|string|regex|meta\\.embedded)\\b");
+    private static readonly Regex STANDARD_TOKEN_TYPE_REGEXP = MyRegex();
+
     private readonly Dictionary<string, BasicScopeAttributes> _cache = new();
     private readonly Dictionary<string, int> _embeddedLanguages;
     private readonly Regex? _embeddedLanguagesRegex;
@@ -120,13 +121,16 @@ public class BasicScopeAttributesProvider
 
         var group = m.Value;
 
-        switch (group)
+        return group switch
         {
-            case "comment": return StandardTokenType.Comment;
-            case "string": return StandardTokenType.String;
-            case "regex": return StandardTokenType.RegEx;
-            case "meta.embedded": return StandardTokenType.Other;
-            default: throw new TextMateException("Unexpected match for standard token type!");
-        }
+            "comment" => StandardTokenType.Comment,
+            "string" => StandardTokenType.String,
+            "regex" => StandardTokenType.RegEx,
+            "meta.embedded" => StandardTokenType.Other,
+            _ => throw new TextMateException("Unexpected match for standard token type!")
+        };
     }
+
+    [GeneratedRegex("\\b(comment|string|regex|meta\\.embedded)\\b")]
+    private static partial Regex MyRegex();
 }
