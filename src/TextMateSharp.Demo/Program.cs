@@ -3,6 +3,7 @@ using Spectre.Console;
 using TextMateSharp.Definitions;
 using TextMateSharp.Grammars;
 using TextMateSharp.Internal.Grammars;
+using TextMateSharp.Internal.Utils;
 using TextMateSharp.Themes;
 
 namespace TextMateSharp.Demo;
@@ -178,13 +179,5 @@ public class Program
         var b = byte.Parse(hexString.Substring(4, 2), NumberStyles.AllowHexSpecifier);
 
         return new(r, g, b);
-    }
-}
-
-public static class StringExtensions
-{
-    public static string SubstringAtIndexes(this string str, int startIndex, int endIndex)
-    {
-        return str.Substring(startIndex, endIndex - startIndex);
     }
 }
