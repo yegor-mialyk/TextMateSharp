@@ -8,6 +8,7 @@ public class CompilePatternsResult
         Patterns = patterns;
     }
 
-    public IList<int> Patterns { get; private set; }
-    public bool HasMissingPatterns { get; private set; }
+    public IList<int> Patterns { get; }
+
+    public bool HasMissingPatterns { get; }
 }

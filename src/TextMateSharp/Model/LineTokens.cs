@@ -9,7 +9,9 @@ public class LineTokens
         EndState = endState;
     }
 
-    public List<TMToken> Tokens { get; private set; }
+    public List<TMToken> Tokens { get; set; }
+
     public int ActualStopOffset { get; set; }
+
     public TMState EndState { get; set; }
 }

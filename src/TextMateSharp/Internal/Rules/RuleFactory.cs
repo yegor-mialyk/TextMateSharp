@@ -3,9 +3,9 @@ using TextMateSharp.Internal.Utils;
 
 namespace TextMateSharp.Internal.Rules;
 
-public class RuleFactory
+public static class RuleFactory
 {
-    public static CaptureRule CreateCaptureRule(IRuleFactoryHelper helper, string? name, string? contentName,
+    private static CaptureRule CreateCaptureRule(IRuleFactoryHelper helper, string? name, string? contentName,
         int retokenizeCapturedWithRuleId)
     {
         return (CaptureRule) helper.RegisterRule(id =>
@@ -62,13 +62,13 @@ public class RuleFactory
         return desc.GetId();
     }
 
-    private static List<CaptureRule?> CompileCaptures(IRawCaptures? captures, IRuleFactoryHelper helper,
+    private static List<CaptureRule> CompileCaptures(IRawCaptures? captures, IRuleFactoryHelper helper,
         IRawRepository? repository)
     {
         if (captures == null)
             return [];
 
-        var r = new List<CaptureRule?>();
+        var r = new List<CaptureRule>();
 
         // Find the maximum capture id
         var maximumCaptureId = 0;
@@ -82,7 +82,7 @@ public class RuleFactory
 
         // Initialize result
         for (var i = 0; i <= maximumCaptureId; i++)
-            r.Add(null);
+            r.Add(null!); //TODO !!!
 
         // Fill out result
         foreach (var captureId in captures)

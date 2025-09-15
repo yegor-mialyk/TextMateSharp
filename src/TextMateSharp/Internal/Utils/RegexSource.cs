@@ -4,48 +4,23 @@ using Onigwrap;
 
 namespace TextMateSharp.Internal.Utils;
 
-public class RegexSource
+public partial class RegexSource
 {
-    private static readonly Regex CAPTURING_REGEX_SOURCE = new(
-        "\\$(\\d+)|\\$\\{(\\d+):\\/(downcase|upcase)}");
+    private static readonly Regex CAPTURING_REGEX_SOURCE = MyRegex();
 
     public static string EscapeRegExpCharacters(string value)
     {
         var valueLen = value.Length;
+
         var sb = new StringBuilder(valueLen);
+
         for (var i = 0; i < valueLen; i++)
         {
             var ch = value[i];
-            switch (ch)
-            {
-                case '-':
-                case '\\':
-                case '{':
-                case '}':
-                case '*':
-                case '+':
-                case '?':
-                case '|':
-                case '^':
-                case '$':
-                case '.':
-                case ',':
-                case '[':
-                case ']':
-                case '(':
-                case ')':
-                case '#':
-                    /* escaping white space chars is actually not necessary:
-                    case ' ':
-                    case '\t':
-                    case '\n':
-                    case '\f':
-                    case '\r':
-                    case 0x0B: // vertical tab \v
-                    */
-                    sb.Append('\\');
-                    break;
-            }
+
+            if (ch is '-' or '\\' or '{' or '}' or '*' or '+' or '?' or '|' or '^' or '$' or '.' or ',' or '[' or ']'
+                or '(' or ')' or '#')
+                sb.Append('\\');
 
             sb.Append(ch);
         }
@@ -55,48 +30,53 @@ public class RegexSource
 
     public static bool HasCaptures(string? regexSource)
     {
-        if (regexSource == null)
-            return false;
-        return CAPTURING_REGEX_SOURCE.Match(regexSource).Success;
+        return regexSource != null && CAPTURING_REGEX_SOURCE.Match(regexSource).Success;
     }
 
-    public static string ReplaceCaptures(string? regexSource, string? captureSource, IOnigCaptureIndex[]? captureIndices)
+    public static string? ReplaceCaptures(string? regexSource, string? captureSource, IOnigCaptureIndex[]? captureIndices)
     {
+        if (regexSource == null || captureSource == null || captureIndices == null)
+            return regexSource;
+
         return CAPTURING_REGEX_SOURCE.Replace(
             regexSource, m => GetReplacement(m.Value, captureSource, captureIndices));
     }
 
     private static string GetReplacement(string match, string captureSource, IOnigCaptureIndex[] captureIndices)
     {
-        var index = -1;
-        string command = null;
+        int index;
+
+        string? command = null;
+
         var doublePointIndex = match.IndexOf(':');
+
         if (doublePointIndex != -1)
         {
             index = int.Parse(match.SubstringAtIndexes(2, doublePointIndex));
             command = match.SubstringAtIndexes(doublePointIndex + 2, match.Length - 1);
         }
         else
-        {
             index = int.Parse(match.SubstringAtIndexes(1, match.Length));
-        }
 
         var capture = captureIndices.Length > index ? captureIndices[index] : null;
-        if (capture != null)
+
+        if (capture == null)
+            return match;
+
+        var result = captureSource.SubstringAtIndexes(capture.Start, capture.End);
+
+        // Remove leading dots that would make the selector invalid
+        while (result.Length > 0 && result[0] == '.')
+            result = result[1..];
+
+        return command switch
         {
-            var result = captureSource.SubstringAtIndexes(capture.Start, capture.End);
-            // Remove leading dots that would make the selector invalid
-            while (result.Length > 0 && result[0] == '.')
-                result = result.Substring(1);
-            if ("downcase".Equals(command))
-                return result.ToLower();
-
-            if ("upcase".Equals(command))
-                return result.ToUpper();
-
-            return result;
-        }
-
-        return match;
+            "downcase" => result.ToLower(),
+            "upcase" => result.ToUpper(),
+            _ => result
+        };
     }
+
+    [GeneratedRegex("\\$(\\d+)|\\$\\{(\\d+):\\/(downcase|upcase)}")]
+    private static partial Regex MyRegex();
 }

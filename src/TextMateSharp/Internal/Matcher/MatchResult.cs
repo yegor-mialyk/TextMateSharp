@@ -3,15 +3,9 @@ using TextMateSharp.Internal.Rules;
 
 namespace TextMateSharp.Internal.Matcher;
 
-internal class MatchResult
+public class MatchResult(IOnigCaptureIndex[] captureIndexes, int matchedRuleId)
 {
-    internal MatchResult(IOnigCaptureIndex[] captureIndexes, int matchedRuleId)
-    {
-        CaptureIndexes = captureIndexes;
-        MatchedRuleId = matchedRuleId;
-    }
+    public IOnigCaptureIndex[] CaptureIndexes { get; private set; } = captureIndexes;
 
-    public IOnigCaptureIndex[] CaptureIndexes { get; private set; }
-
-    public int MatchedRuleId { get; private set; }
+    public int MatchedRuleId { get; private set; } = matchedRuleId;
 }

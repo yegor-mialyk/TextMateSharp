@@ -2,7 +2,7 @@ using System.Text.RegularExpressions;
 
 namespace TextMateSharp.Internal.Matcher;
 
-public partial class MatcherBuilder<T>
+public class MatcherBuilder<T>
 {
     private readonly IMatchesName<T> _matchesName;
     private readonly Tokenizer _tokenizer;
@@ -35,8 +35,8 @@ public partial class MatcherBuilder<T>
             }
 
             var matcher = ParseConjunction();
-            if (matcher != null)
-                Results.Add(new(matcher, priority));
+            //TODO !!! if (matcher != null)
+            Results.Add(new(matcher, priority));
             if (!",".Equals(_token))
                 break;
             _token = _tokenizer.Next();
@@ -47,7 +47,7 @@ public partial class MatcherBuilder<T>
     {
         var matchers = new List<Predicate<T>>();
         var matcher = ParseConjunction();
-        while (matcher != null)
+        while (true) //TODO !!! use to be (matcher != null)
         {
             matchers.Add(matcher);
             if ("|".Equals(_token) || ",".Equals(_token))
@@ -119,10 +119,10 @@ public partial class MatcherBuilder<T>
 
         if (IsIdentifier(_token))
         {
-            ICollection<string?> identifiers = new List<string?>();
+            var identifiers = new List<string>();
             do
             {
-                identifiers.Add(_token);
+                identifiers.Add(_token!);
                 _token = _tokenizer.Next();
             } while (_token != null && IsIdentifier(_token));
 
@@ -134,52 +134,38 @@ public partial class MatcherBuilder<T>
 
     private static bool IsIdentifier(string? token)
     {
-        if (string.IsNullOrEmpty(token))
-            return false;
-
-        /* Aprox. 2-3 times faster than:
-         * static final Pattern IDENTIFIER_REGEXP = Pattern.compile("[\\w\\.:]+");
-         * IDENTIFIER_REGEXP.matcher(token).matches();
-         *
-         * Aprox. 10% faster than:
-         * token.chars().allMatch(ch -> ... )
-         */
-        for (var i = 0; i < token.Length; i++)
-        {
-            var ch = token[i];
-            if (ch == '.' ||
-                ch == ':' ||
-                ch == '_' ||
-                (ch >= 'a' && ch <= 'z') ||
-                (ch >= 'A' && ch <= 'Z') ||
-                (ch >= '0' && ch <= '9'))
-                continue;
-            return false;
-        }
-
-        return true;
-    }
-
-    private partial class Tokenizer
-    {
-        private static readonly Regex REGEXP = MyRegex();
-
-        private readonly string _input;
-        private Match? _currentMatch;
-
-        public Tokenizer(string input)
-        {
-            _input = input;
-        }
-
-        public string? Next()
-        {
-            _currentMatch = _currentMatch == null ? REGEXP.Match(_input) : _currentMatch.NextMatch();
-
-            return _currentMatch.Success ? _currentMatch.Value : null;
-        }
-
-        [GeneratedRegex("([LR]:|[\\w\\.:][\\w\\.:\\-]*|[\\,\\|\\-\\(\\)])")]
-        private static partial Regex MyRegex();
+        return !string.IsNullOrEmpty(token) &&
+            /* Aprox. 2-3 times faster than:
+             * static final Pattern IDENTIFIER_REGEXP = Pattern.compile("[\\w\\.:]+");
+             * IDENTIFIER_REGEXP.matcher(token).matches();
+             *
+             * Aprox. 10% faster than:
+             * token.chars().allMatch(ch -> ... )
+             */
+            token.All(ch => ch is '.' or ':' or '_' or >= 'a' and <= 'z' or >= 'A' and <= 'Z' or >= '0' and <= '9');
     }
 }
+
+public partial class Tokenizer
+{
+    private static readonly Regex REGEX = MyRegex();
+
+    private readonly string _input;
+    private Match? _currentMatch;
+
+    public Tokenizer(string input)
+    {
+        _input = input;
+    }
+
+    public string? Next()
+    {
+        _currentMatch = _currentMatch == null ? REGEX.Match(_input) : _currentMatch.NextMatch();
+
+        return _currentMatch.Success ? _currentMatch.Value : null;
+    }
+
+    [GeneratedRegex("([LR]:|[\\w\\.:][\\w\\.:\\-]*|[\\,\\|\\-\\(\\)])")]
+    private static partial Regex MyRegex();
+}
+

@@ -123,7 +123,7 @@ public class ThemeTrieElement
         child.Insert(name, scopeDepth + 1, tail, parentScopes, fontStyle, foreground, background);
     }
 
-    private void DoInsertHere(string name, int scopeDepth, List<string> parentScopes, FontStyle fontStyle,
+    private void DoInsertHere(string name, int scopeDepth, List<string>? parentScopes, FontStyle fontStyle,
         int foreground,
         int background)
     {

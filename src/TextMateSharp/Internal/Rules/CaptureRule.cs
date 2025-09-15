@@ -8,7 +8,7 @@ public class CaptureRule : Rule
         RetokenizeCapturedWithRuleId = retokenizeCapturedWithRuleId;
     }
 
-    public int RetokenizeCapturedWithRuleId { get; private set; }
+    public int RetokenizeCapturedWithRuleId { get; }
 
     public override void CollectPatternsRecursive(IRuleRegistry grammar, RegExpSourceList sourceList, bool isFirst)
     {

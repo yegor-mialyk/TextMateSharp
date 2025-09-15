@@ -78,10 +78,10 @@ public class BeginWhileRule : Rule
 
     private void PrecompileWhile()
     {
-        if (_cachedCompiledWhilePatterns == null)
-        {
-            _cachedCompiledWhilePatterns = new();
-            _cachedCompiledWhilePatterns.Push(_while.HasBackReferences() ? _while.Clone() : _while);
-        }
+        if (_cachedCompiledWhilePatterns != null)
+            return;
+
+        _cachedCompiledWhilePatterns = new();
+        _cachedCompiledWhilePatterns.Push(_while.HasBackReferences() ? _while.Clone() : _while);
     }
 }

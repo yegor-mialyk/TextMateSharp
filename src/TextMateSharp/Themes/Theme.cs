@@ -79,13 +79,13 @@ public class Theme
         return _colorMap.GetColor(id);
     }
 
-    internal ThemeTrieElementRule GetDefaults()
+    public ThemeTrieElementRule GetDefaults()
     {
         return _theme.GetDefaults();
     }
 }
 
-internal class ParsedTheme
+public class ParsedTheme
 {
     private readonly Dictionary<string /* scopeName */, List<ThemeTrieElementRule>> _cachedMatchRoot = new();
     private readonly ThemeTrieElementRule _defaults;
@@ -97,7 +97,7 @@ internal class ParsedTheme
         _defaults = defaults;
     }
 
-    internal static List<ParsedThemeRule> ParseTheme(IRawTheme source, int priority)
+    public static List<ParsedThemeRule> ParseTheme(IRawTheme source, int priority)
     {
         var result = new List<ParsedThemeRule>();
 
@@ -112,7 +112,7 @@ internal class ParsedTheme
         return result;
     }
 
-    internal static void ParsedGuiColors(IRawTheme source, Dictionary<string, string> colorDictionary)
+    public static void ParsedGuiColors(IRawTheme source, Dictionary<string, string> colorDictionary)
     {
         var colors = source.GetGuiColors();
         if (colors == null)
@@ -121,7 +121,7 @@ internal class ParsedTheme
             colorDictionary[kvp.Key] = (string) kvp.Value;
     }
 
-    internal static List<ParsedThemeRule> ParseInclude(
+    public static List<ParsedThemeRule> ParseInclude(
         IRawTheme source,
         IRegistryOptions registryOptions,
         int priority,
@@ -289,18 +289,21 @@ internal class ParsedTheme
         return new(defaults, root);
     }
 
-    internal List<ThemeTrieElementRule> Match(string scopeName)
+    public List<ThemeTrieElementRule> Match(string scopeName)
     {
-        if (_cachedMatchRoot.TryGetValue(scopeName, out var value))
+        lock (_cachedMatchRoot)
+        {
+            if (_cachedMatchRoot.TryGetValue(scopeName, out var value))
+                return value;
+
+            value = _root.Match(scopeName);
+            _cachedMatchRoot[scopeName] = value;
+
             return value;
-
-        value = _root.Match(scopeName);
-        _cachedMatchRoot[scopeName] = value;
-
-        return value;
+        }
     }
 
-    internal ThemeTrieElementRule GetDefaults()
+    public ThemeTrieElementRule GetDefaults()
     {
         return _defaults;
     }

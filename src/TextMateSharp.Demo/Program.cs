@@ -7,7 +7,7 @@ using TextMateSharp.Themes;
 
 namespace TextMateSharp.Demo;
 
-internal class Program
+public class Program
 {
     private static void Main(string[] args)
     {
@@ -181,9 +181,9 @@ internal class Program
     }
 }
 
-internal static class StringExtensions
+public static class StringExtensions
 {
-    internal static string SubstringAtIndexes(this string str, int startIndex, int endIndex)
+    public static string SubstringAtIndexes(this string str, int startIndex, int endIndex)
     {
         return str.Substring(startIndex, endIndex - startIndex);
     }

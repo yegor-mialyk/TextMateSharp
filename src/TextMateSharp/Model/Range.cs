@@ -14,6 +14,7 @@ public class Range
         ToLineNumber = toLineNumber;
     }
 
-    public int FromLineNumber { get; private set; }
+    public int FromLineNumber { get; set; }
+
     public int ToLineNumber { get; set; }
 }

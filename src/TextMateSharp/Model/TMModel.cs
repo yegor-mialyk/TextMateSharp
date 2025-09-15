@@ -6,18 +6,19 @@ namespace TextMateSharp.Model;
 public class TMModel : ITMModel
 {
     private const int MAX_LEN_TO_TOKENIZE = 10000;
+
     private readonly Queue<int> _invalidLines = new();
     private readonly IModelLines _lines;
     private readonly object _lock = new();
     private readonly ManualResetEvent _resetEvent = new(false);
-    private readonly List<IModelTokensChangedListener> listeners;
-    private IGrammar _grammar;
-    private TokenizerThread _thread;
+    private readonly List<IModelTokensChangedListener> _listeners = [];
+
+    private IGrammar? _grammar;
+    private TokenizerThread? _thread;
     private Tokenizer _tokenizer;
 
     public TMModel(IModelLines lines)
     {
-        listeners = new();
         _lines = lines;
         ((AbstractLineList) lines).SetModel(this);
     }
@@ -57,19 +58,19 @@ public class TMModel : ITMModel
         if (_grammar != null)
             Start();
 
-        lock (listeners)
+        lock (_listeners)
         {
-            if (!listeners.Contains(listener))
-                listeners.Add(listener);
+            if (!_listeners.Contains(listener))
+                _listeners.Add(listener);
         }
     }
 
     public void RemoveModelTokensChangedListener(IModelTokensChangedListener listener)
     {
-        lock (listeners)
+        lock (_listeners)
         {
-            listeners.Remove(listener);
-            if (listeners.Count == 0)
+            _listeners.Remove(listener);
+            if (_listeners.Count == 0)
                 // no need to keep tokenizing if no-one cares
                 Stop();
         }
@@ -77,9 +78,9 @@ public class TMModel : ITMModel
 
     public void Dispose()
     {
-        lock (listeners)
+        lock (_listeners)
         {
-            listeners.Clear();
+            _listeners.Clear();
         }
 
         Stop();
@@ -91,7 +92,7 @@ public class TMModel : ITMModel
         ForceTokenization(lineIndex, lineIndex);
     }
 
-    public List<TMToken> GetLineTokens(int lineIndex)
+    public List<TMToken>? GetLineTokens(int lineIndex)
     {
         if (lineIndex < 0 || lineIndex > _lines.GetNumberOfLines() - 1)
             return null;
@@ -134,9 +135,9 @@ public class TMModel : ITMModel
 
     private void Emit(ModelTokensChangedEvent e)
     {
-        lock (listeners)
+        lock (_listeners)
         {
-            foreach (var listener in listeners)
+            foreach (var listener in _listeners)
                 try
                 {
                     listener.ModelTokensChanged(e);
@@ -348,7 +349,7 @@ public class TMModel : ITMModel
             var lineIndex = startIndex;
             while (lineIndex <= endLineIndex && lineIndex < model._lines.GetNumberOfLines())
             {
-                if (model._grammar != null && model._grammar.IsCompiling)
+                if (model._grammar is { IsCompiling: true })
                 {
                     lineIndex++;
                     continue;
@@ -391,7 +392,7 @@ public class TMModel : ITMModel
                         modeLine.State);
 
                 modeLine.Tokens = r.Tokens;
-                eventBuilder.registerChangedTokens(lineIndex + 1);
+                eventBuilder.RegisterChangedTokens(lineIndex + 1);
                 modeLine.IsInvalid = false;
 
                 if (endStateIndex < model._lines.GetNumberOfLines())

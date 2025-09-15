@@ -2,7 +2,7 @@ using TextMateSharp.Grammars;
 
 namespace TextMateSharp.Internal.Grammars;
 
-internal class Token : IToken
+public class Token : IToken
 {
     public Token(int startIndex, int endIndex, List<string> scopes)
     {

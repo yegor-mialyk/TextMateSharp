@@ -7,7 +7,7 @@ using TextMateSharp.Internal.Utils;
 
 namespace TextMateSharp.Internal.Grammars;
 
-internal class LineTokenizer
+public class LineTokenizer
 {
     private readonly Grammar _grammar;
     private readonly int _lineLength;
@@ -360,7 +360,7 @@ internal class LineTokenizer
         return null;
     }
 
-    private void HandleCaptures(Grammar grammar, string lineText, bool isFirstLine, StateStack stack,
+    private static void HandleCaptures(Grammar grammar, string lineText, bool isFirstLine, StateStack stack,
         LineTokens lineTokens, List<CaptureRule> captures, IOnigCaptureIndex[] captureIndices)
     {
         if (captures.Count == 0)

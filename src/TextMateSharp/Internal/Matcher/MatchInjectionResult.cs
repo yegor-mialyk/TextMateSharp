@@ -3,15 +3,8 @@ using TextMateSharp.Internal.Rules;
 
 namespace TextMateSharp.Internal.Matcher;
 
-internal class MatchInjectionsResult : MatchResult
+public class MatchInjectionsResult(IOnigCaptureIndex[] captureIndexes, int matchedRuleId, bool isPriorityMatch)
+    : MatchResult(captureIndexes, matchedRuleId)
 {
-    internal MatchInjectionsResult(
-        IOnigCaptureIndex[] captureIndexes,
-        int matchedRuleId,
-        bool isPriorityMatch) : base(captureIndexes, matchedRuleId)
-    {
-        IsPriorityMatch = isPriorityMatch;
-    }
-
-    public bool IsPriorityMatch { get; private set; }
+    public bool IsPriorityMatch { get; private set; } = isPriorityMatch;
 }

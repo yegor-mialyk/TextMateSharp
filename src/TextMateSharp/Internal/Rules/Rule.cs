@@ -36,7 +36,7 @@ public abstract class Rule
         _contentNameIsCapturing = RegexSource.HasCaptures(_contentName);
     }
 
-    public int Id { get; }
+    protected int Id { get; }
 
     public string? GetName(string? lineText, IOnigCaptureIndex[]? captureIndices)
     {

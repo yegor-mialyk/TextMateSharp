@@ -10,8 +10,8 @@ public class RegExpSourceAnchorCache
         A1_G1 = a1_G1;
     }
 
-    public string A0_G0 { get; private set; }
-    public string A0_G1 { get; private set; }
-    public string A1_G0 { get; private set; }
-    public string A1_G1 { get; private set; }
+    public string A0_G0 { get; }
+    public string A0_G1 { get; }
+    public string A1_G0 { get; }
+    public string A1_G1 { get; }
 }

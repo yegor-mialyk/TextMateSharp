@@ -2,7 +2,7 @@ using System.Text;
 
 namespace TextMateSharp.Model;
 
-internal class DecodeMap
+public class DecodeMap
 {
     private readonly Dictionary<string /* scope */, int[] /* ids */> _scopeToTokenIds = new();
     private readonly Dictionary<int /* id */, string /* id */> _tokenIdToToken = new();

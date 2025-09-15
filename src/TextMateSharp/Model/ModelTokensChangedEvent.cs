@@ -3,7 +3,7 @@ namespace TextMateSharp.Model;
 public class ModelTokensChangedEvent
 {
     public ModelTokensChangedEvent(Range range, ITMModel model) :
-        this(new List<Range> { range }, model)
+        this([range], model)
     {
     }
 
@@ -13,6 +13,7 @@ public class ModelTokensChangedEvent
         Model = model;
     }
 
-    public List<Range> Ranges { get; private set; }
-    public ITMModel Model { get; private set; }
+    public List<Range> Ranges { get; }
+
+    public ITMModel Model { get; }
 }

@@ -1,19 +1,18 @@
 namespace TextMateSharp.Model;
 
-internal class ModelTokensChangedEventBuilder
+public class ModelTokensChangedEventBuilder
 {
     private readonly ITMModel _model;
-    private readonly List<Range> _ranges;
+    private readonly List<Range> _ranges = [];
 
     public ModelTokensChangedEventBuilder(ITMModel model)
     {
         _model = model;
-        _ranges = new();
     }
 
-    public void registerChangedTokens(int lineNumber)
+    public void RegisterChangedTokens(int lineNumber)
     {
-        var previousRange = _ranges.Count == 0 ? null : _ranges[_ranges.Count - 1];
+        var previousRange = _ranges.Count == 0 ? null : _ranges[^1];
 
         if (previousRange != null && previousRange.ToLineNumber == lineNumber - 1)
             // extend previous range
@@ -23,10 +22,8 @@ internal class ModelTokensChangedEventBuilder
             _ranges.Add(new(lineNumber));
     }
 
-    public ModelTokensChangedEvent Build()
+    public ModelTokensChangedEvent? Build()
     {
-        if (_ranges.Count == 0)
-            return null;
-        return new(_ranges, _model);
+        return _ranges.Count == 0 ? null : new(_ranges, _model);
     }
 }

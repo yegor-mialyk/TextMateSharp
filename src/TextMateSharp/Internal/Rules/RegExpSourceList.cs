@@ -4,17 +4,11 @@ namespace TextMateSharp.Internal.Rules;
 
 public class RegExpSourceList
 {
-    private readonly RegExpSourceListAnchorCache _anchorCache;
+    private readonly RegExpSourceListAnchorCache _anchorCache = new();
 
-    private readonly List<RegExpSource> _items;
+    private readonly List<RegExpSource> _items = [];
     private CompiledRule? _cached;
     private bool _hasAnchors;
-
-    public RegExpSourceList()
-    {
-        _items = new();
-        _anchorCache = new();
-    }
 
     public void Push(RegExpSource item)
     {
@@ -36,7 +30,7 @@ public class RegExpSourceList
     public void SetSource(int index, string newSource)
     {
         var r = _items[index];
-        if (!r.GetSource().Equals(newSource))
+        if (!newSource.Equals(r.GetSource()))
         {
             // bust the cache
             _cached = null;
@@ -55,10 +49,8 @@ public class RegExpSourceList
         {
             if (_cached == null)
             {
-                var regexps = new List<string>();
-                foreach (var regExpSource in _items)
-                    regexps.Add(regExpSource.GetSource());
-                _cached = new(CreateOnigScanner(regexps.ToArray()), GetRules());
+                var regexps = _items.Select(regExpSource => regExpSource.GetSource()).ToArray();
+                _cached = new(CreateOnigScanner(regexps), GetRules());
             }
 
             return _cached;
@@ -85,10 +77,8 @@ public class RegExpSourceList
 
     private CompiledRule ResolveAnchors(bool allowA, bool allowG)
     {
-        var regexps = new List<string>();
-        foreach (var regExpSource in _items)
-            regexps.Add(regExpSource.ResolveAnchors(allowA, allowG));
-        return new(CreateOnigScanner(regexps.ToArray()), GetRules());
+        var regexps = _items.Select(regExpSource => regExpSource.ResolveAnchors(allowA, allowG)).ToArray();
+        return new(CreateOnigScanner(regexps), GetRules());
     }
 
     private static OnigScanner CreateOnigScanner(string[] regexps)

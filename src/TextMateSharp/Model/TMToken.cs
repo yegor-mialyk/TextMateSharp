@@ -8,6 +8,7 @@ public class TMToken
         Scopes = scopes;
     }
 
-    public int StartIndex { get; private set; }
-    public List<string> Scopes { get; private set; }
+    public int StartIndex { get; }
+
+    public List<string> Scopes { get; }
 }

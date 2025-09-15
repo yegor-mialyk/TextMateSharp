@@ -13,7 +13,7 @@ public class IncludeOnlyRule : Rule
         _cachedCompiledPatterns = null;
     }
 
-    public bool HasMissingPatterns { get; private set; }
+    public bool HasMissingPatterns { get; }
     public IList<int> Patterns { get; }
 
     public override void CollectPatternsRecursive(IRuleRegistry grammar, RegExpSourceList sourceList, bool isFirst)

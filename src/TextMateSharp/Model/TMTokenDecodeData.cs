@@ -8,6 +8,7 @@ public class TMTokenDecodeData
         ScopeTokensMaps = scopeTokensMaps;
     }
 
-    public string[] Scopes { get; private set; }
-    public Dictionary<int, Dictionary<int, bool>> ScopeTokensMaps { get; private set; }
+    public string[] Scopes { get; }
+
+    public Dictionary<int, Dictionary<int, bool>> ScopeTokensMaps { get; }
 }

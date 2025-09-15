@@ -1,6 +1,6 @@
 namespace TextMateSharp.Internal.Grammars;
 
-internal class LocalStackElement
+public class LocalStackElement
 {
     public LocalStackElement(AttributedScopeStack scopes, int endPos)
     {
